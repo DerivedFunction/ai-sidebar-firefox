@@ -4,7 +4,7 @@
   "version": "1.0.0.0",
   "description": "Microsoft Copilot, ChatGPT, and Google Gemini is now available as a sidebar for Firefox",
   "icons": {
-    "48": "/assets/images/copilot.png"
+    "48": "/assets/images/bot_48.png"
   },
   "background": {
     "scripts": ["background.js"]
