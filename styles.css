@@ -1,37 +1,116 @@
-body {
+/* styles.css */
+:root {
+  /* Light mode default variables */
+  --background: #f5f5f5;
+  --item-bg: #ffffff;
+  --text-color: #333;
+  --border-color: #ddd;
+  --hover-bg: #f8f8f8;
+  --active-bg: #f0f0f0;
+  --shadow-color: rgba(0, 0, 0, 0.05);
+  --shadow-hover: rgba(0, 0, 0, 0.1);
+  --border-hover: #bbb;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Dark mode variables */
+    --background: #1a1a1a;
+    --item-bg: #2d2d2d;
+    --text-color: #e0e0e0;
+    --border-color: #444;
+    --hover-bg: #383838;
+    --active-bg: #252525;
+    --shadow-color: rgba(0, 0, 0, 0.3);
+    --shadow-hover: rgba(0, 0, 0, 0.5);
+    --border-hover: #666;
+  }
+}
+
+.sidebar-container {
   width: 100%;
-  margin: 0;
-  padding: 0;
-  font-family: Arial, sans-serif;
-  background-color: #333;
-}
-.sidebar {
-  width: 100%;
-  height: 100%;
-  position: fixed;
-  top: 0;
-  left: 0;
-  overflow-x: hidden;
-}
-.sidebar ul {
-  list-style-type: none;
-  padding: 0;
-  margin: 0;
-}
-.sidebar li {
-  text-align: center;
-}
-.sidebar li a {
-  display: block;
-  color: white;
-  text-decoration: none;
+  height: 100vh;
+  background: var(--background);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   padding: 10px;
+  box-sizing: border-box;
 }
-.sidebar li a:hover {
-  background-color: #555;
+
+.sidebar-header {
+  padding: 10px;
+  border-bottom: 1px solid var(--border-color);
 }
-.sidebar li img {
-  width: 20px;
-  height: 20px;
-  margin-right: 5px;
+
+.sidebar-header h1 {
+  margin: 0;
+  font-size: 1.2em;
+  color: var(--text-color);
+  display: flex;
+  align-items: center;
+  gap: 8px; /* Space between icon and text */
+}
+
+.ai-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.ai-item {
+  margin: 8px 0;
+  background: var(--item-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  box-shadow: 0 2px 4px var(--shadow-color);
+  transition: all 0.2s ease;
+}
+
+.ai-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px var(--shadow-hover);
+  border-color: var(--border-hover);
+}
+
+.ai-item a {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  text-decoration: none;
+  color: var(--text-color);
+  border-radius: 6px;
+  transition: background 0.2s ease;
+}
+
+.ai-item a:hover {
+  background: var(--hover-bg);
+}
+
+.ai-item a:active {
+  background: var(--active-bg);
+  transform: translateY(1px);
+}
+
+.ai-icon {
+  width: 24px;
+  height: 24px;
+  margin-right: 12px;
+  object-fit: contain;
+  transition: transform 0.2s ease;
+  filter: brightness(0) invert(1); /* Ensures icons are visible in dark mode */
+}
+
+.ai-item:hover .ai-icon {
+  transform: scale(1.1);
+}
+
+.ai-name {
+  font-size: 0.9em;
+  font-weight: 500;
+}
+
+/* Special handling for SVG icons that need color adjustment */
+@media (prefers-color-scheme: dark) {
+  .ai-icon[src$=".svg"] {
+    filter: brightness(0) invert(1); /* Makes dark SVGs white in dark mode */
+  }
 }

@@ -1,66 +1,23 @@
+<!-- sidebar.html -->
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="utf-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <title>AI Sidebar FireFox</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Tools Sidebar</title>
     <link
       rel="shortcut icon"
       href="/assets/images/icon.svg"
       type="image/x-icon"
     />
-    <meta name="viewport" content="width=device-width" />
-    <link type="text/css" rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div class="sidebar">
-      <ul>
-        <li>
-          <a target="_self" href="https://grok.com/">
-            <img src="/assets/images/grok.svg" alt="Grok icon" />
-            Grok / xAI
-          </a>
-        </li>
-        <li>
-          <a target="_self" href="https://copilot.microsoft.com/">
-            <img src="/assets/images/copilot.svg" alt="Copilot icon" />
-            Microsoft Copilot
-          </a>
-        </li>
-        <li>
-          <a target="_self" href="https://chat.openai.com/">
-            <img src="/assets/images/chatgpt.svg" alt="ChatGPT icon" />
-            ChatGPT</a
-          >
-        </li>
-        <li>
-          <a target="_self" href="https://gemini.google.com/app">
-            <img src="/assets/images/gemini.svg" alt="Gemini icon" />
-            Google Gemini</a
-          >
-        </li>
-        <li>
-          <a target="_self" href="https://huggingface.co/chat/">
-            <img
-              src="https://huggingface.co/chat/huggingchat/logo.svg"
-              alt="Hugging Face icon"
-            />
-            HuggingChat</a
-          >
-        </li>
-        <li>
-          <a target="_self" href="https://claude.ai/new">
-            <img src="/assets/images/claude.svg" alt="Claude icon" />
-            Anthropic Claude</a
-          >
-        </li>
-        <li>
-          <a target="_self" href="https://chat.mistral.ai/chat">
-            <img src="assets/images/mistral.svg" alt="Mistral icon" />
-            Mistral AI</a
-          >
-        </li>
-      </ul>
+    <div class="sidebar-container">
+      <header class="sidebar-header">
+        <h1><img src="/assets/images/icon.svg" alt="icon" /> AI Tools</h1>
+      </header>
+      <ul id="ai-elements" class="ai-list"></ul>
     </div>
     <script src="/src/script/app.js"></script>
   </body>

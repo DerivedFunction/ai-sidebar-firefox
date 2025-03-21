@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "AI Sidebar for Firefox",
-  "version": "1.0.0.0",
-  "description": "Microsoft Copilot, ChatGPT, and Google Gemini is now available as a sidebar for Firefox",
+  "version": "2.0.0.0",
+  "description": "Popular AI chatbots is now available as a sidebar for Firefox",
   "icons": {
     "48": "/assets/images/icon.svg"
   },
@@ -24,7 +24,9 @@
       "16": "/assets/images/icon.svg",
       "48": "/assets/images/icon.svg",
       "128": "/assets/images/icon.svg"
-    }
+    },
+    "default_title": "AI Sidebar",
+    "default_popup": "sidebar.html"
   },
   "browser_specific_settings": {
     "gecko": {
