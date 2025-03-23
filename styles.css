@@ -114,3 +114,9 @@
     filter: brightness(0) invert(1); /* Makes dark SVGs white in dark mode */
   }
 }
+/* Special handling for SVG icons that need color adjustment */
+@media (prefers-color-scheme: light) {
+  .ai-icon[src$=".svg"] {
+    filter: invert(0); /* Return to normal colors */
+  }
+}

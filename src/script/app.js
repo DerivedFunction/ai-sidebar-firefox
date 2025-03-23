@@ -28,7 +28,7 @@ const AI_LIST = [
   {
     name: "HuggingChat",
     url: "https://huggingface.co/chat/",
-    icon: "https://huggingface.co/chat/huggingchat/logo.svg",
+    icon: "/assets/images/hug.svg",
   },
   {
     name: "Anthropic Claude",
@@ -49,16 +49,30 @@ const AI_LIST = [
 
 function renderSidebar() {
   const list = document.getElementById("ai-elements");
-  list.innerHTML = AI_LIST.map(
-    (ai) => `
-    <li class="ai-item">
-      <a href="${ai.url}" target="_self" rel="noopener noreferrer">
-        <img src="${ai.icon}" alt="${ai.name} icon" class="ai-icon" />
-        <span class="ai-name">${ai.name}</span>
-      </a>
-    </li>
-  `
-  ).join("");
+  list.innerHTML = "";
+  AI_LIST.forEach((ai, i) => {
+    const listItem = document.createElement("li");
+    listItem.className = "ai-item";
+    listItem.id = `ai-item-${i}`;
+    const link = document.createElement("a");
+    link.href = ai.url;
+    link.target = "_self";
+    link.rel = "noopener noreferrer";
+
+    const icon = document.createElement("img");
+    icon.src = ai.icon;
+    icon.alt = `${ai.name} icon`;
+    icon.className = "ai-icon";
+
+    const name = document.createElement("span");
+    name.className = "ai-name";
+    name.textContent = ai.name;
+
+    link.appendChild(icon);
+    link.appendChild(name);
+    listItem.appendChild(link);
+    list.appendChild(listItem);
+  });
 
   // Add sidebar panel
   if (typeof browser !== "undefined") {
