@@ -1,3 +1,3 @@
-browser.browserAction.onClicked.addListener(() => {
+browser.action.onClicked.addListener(() => {
   browser.sidebarAction.toggle();
 });
