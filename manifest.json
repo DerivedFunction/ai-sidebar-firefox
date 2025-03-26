@@ -32,5 +32,6 @@
     "gecko": {
       "id": "dennyli2004@hotmail.com"
     }
-  }
+  },
+  "permissions": ["history"]
 }

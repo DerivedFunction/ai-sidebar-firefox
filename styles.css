@@ -1,6 +1,7 @@
 /* styles.css */
 :root {
   /* Light mode default variables */
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --background: #f5f5f5;
   --item-bg: #ffffff;
   --text-color: #333;
@@ -27,11 +28,18 @@
   }
 }
 
+body {
+  font-family: var(--font);
+  margin: 0;
+  padding: 0;
+  background: var(--background);
+  color: var(--text-color);
+}
+
 .sidebar-container {
   width: 100%;
   height: 100vh;
   background: var(--background);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   padding: 10px;
   box-sizing: border-box;
 }
@@ -47,7 +55,7 @@
   color: var(--text-color);
   display: flex;
   align-items: center;
-  gap: 8px; /* Space between icon and text */
+  gap: 8px;
 }
 
 .ai-list {
@@ -63,6 +71,9 @@
   border-radius: 6px;
   box-shadow: 0 2px 4px var(--shadow-color);
   transition: all 0.2s ease;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .ai-item:hover {
@@ -72,6 +83,7 @@
 }
 
 .ai-item a {
+  flex-grow: 1;
   display: flex;
   align-items: center;
   padding: 10px;
@@ -96,7 +108,6 @@
   margin-right: 12px;
   object-fit: contain;
   transition: transform 0.2s ease;
-  filter: brightness(0) invert(1); /* Ensures icons are visible in dark mode */
 }
 
 .ai-item:hover .ai-icon {
@@ -108,15 +119,184 @@
   font-weight: 500;
 }
 
-/* Special handling for SVG icons that need color adjustment */
+.pin {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+  margin-left: auto;
+}
+
+.pin-icon {
+  width: 16px;
+  height: 16px;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.pin-icon.pinned {
+  opacity: 1;
+  filter: brightness(0) saturate(100%) hue-rotate(120deg); /* Green tint */
+}
+
+.pin:hover .pin-icon {
+  opacity: 1;
+}
+
+.search-container {
+  margin-top: 20px;
+  position: relative;
+  padding: 0 10px;
+  box-sizing: border-box;
+}
+
+#search {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 50px;
+  background: var(--item-bg);
+  color: var(--text-color);
+  font-family: inherit;
+  font-size: 0.9em;
+  box-shadow: 0 2px 4px var(--shadow-color);
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+#search:focus {
+  outline: none;
+  border-color: var(--border-hover);
+  box-shadow: 0 4px 8px var(--shadow-hover);
+  border-radius: 0;
+}
+
+#search::placeholder {
+  color: var(--text-color);
+  opacity: 0.6;
+}
+.search-engine-nav {
+  padding: 5px 12px !important; /* Override search-item padding for navbar */
+  border-bottom: 1px solid var(--border-color);
+}
+
+#search-engine-navbar {
+  display: flex;
+  gap: 5px;
+  padding: 5px 5px;
+  background: var(--item-bg); /* Matches dropdown background */
+}
+
+.search-engine-btn {
+  background: var(--background);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 4px 8px;
+  color: var(--text-color);
+  cursor: pointer;
+  font-size: 0.8em;
+  transition: all 0.2s ease;
+}
+
+.search-engine-btn:hover {
+  background: var(--hover-bg);
+  border-color: var(--border-hover);
+}
+
+.search-engine-btn.active {
+  background: var(--active-bg);
+  border-color: var(--border-hover);
+  font-weight: bold;
+}
+
+.search-results {
+  position: absolute;
+  top: 100%;
+  left: 10px;
+  right: 10px;
+  max-height: 75vh;
+  overflow-y: auto;
+  background: var(--item-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  box-shadow: 0 4px 8px var(--shadow-color);
+  margin-top: 4px;
+  z-index: 10;
+  display: none;
+}
+.search-engine-btn {
+  height: 25px;
+  width: 25px;
+  padding: 0;
+  background-color: white;
+  border: none;
+}
+
+.search-engine-btn.active {
+  height: 25px;
+  padding: 0;
+  background-color: white;
+  border-bottom: 5px solid var(--border-hover);
+}
+.search-engine-btn img {
+  width: 100%;
+  height: 100%;
+}
+.search-results.active {
+  display: block;
+}
+
+#search-results {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.search-item {
+  margin: 0;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.search-item:last-child {
+  border-bottom: none;
+}
+
+.search-item a {
+  display: block;
+  color: var(--text-color);
+  text-decoration: none;
+  transition: background 0.2s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search-item a:hover {
+  background: var(--hover-bg);
+}
+
+.search-item a:active {
+  background: var(--active-bg);
+}
+
+.search-item a:focus {
+  outline: 2px solid var(--border-hover);
+  outline-offset: 2px;
+  background: var(--hover-bg);
+}
+
+/* SVG icon adjustments */
 @media (prefers-color-scheme: dark) {
-  .ai-icon[src$=".svg"] {
-    filter: brightness(0) invert(1); /* Makes dark SVGs white in dark mode */
+  .ai-icon[src$=".svg"],
+  .pin-icon[src$=".svg"] {
+    filter: brightness(0) invert(1);
   }
 }
-/* Special handling for SVG icons that need color adjustment */
+
 @media (prefers-color-scheme: light) {
-  .ai-icon[src$=".svg"] {
-    filter: invert(0); /* Return to normal colors */
+  .ai-icon[src$=".svg"],
+  .pin-icon[src$=".svg"] {
+    filter: invert(0);
   }
 }

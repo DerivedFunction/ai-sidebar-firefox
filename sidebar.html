@@ -13,9 +13,25 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <div class="search-container">
+      <input
+        type="text"
+        id="search"
+        placeholder="Search or enter web address..."
+      />
+
+      <div class="search-results">
+        <ul id="search-results"></ul>
+        <div id="search-engine-navbar"></div>
+      </div>
+    </div>
     <div class="sidebar-container">
       <header class="sidebar-header">
-        <h1><img src="/assets/images/icon.svg" alt="icon" /> AI Tools</h1>
+        <h1>Quick Access</h1>
+      </header>
+      <ul id="quick-access" class="ai-list"></ul>
+      <header class="sidebar-header">
+        <h1><img src="/assets/images/icon.svg" alt="icon" />AI Tools</h1>
       </header>
       <ul id="ai-elements" class="ai-list"></ul>
     </div>
