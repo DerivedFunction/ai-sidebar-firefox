@@ -418,7 +418,7 @@ function search() {
     browser.history
       .search({ text: query })
       .then((results) => {
-        const LIMIT = 10;
+        const LIMIT = 12;
 
         // Create a fake entry with a search engine query
         const fakeEntry = {
@@ -438,7 +438,7 @@ function search() {
         // Get all search engine queries
         const searchEngineEntries = getSearchEngineQueries(results, query);
         // Take top LIMIT results
-        results = results.slice(0, LIMIT - 4);
+        results = results.slice(0, LIMIT - 5);
         // Deduplicate results based on N characters after the domain name
         const uniqueResults = [];
         const seenUrls = new Set();
@@ -459,7 +459,7 @@ function search() {
         });
         results = uniqueResults;
         // Append consolidated domain entries up to LIMIT
-        let spaceAvailable = LIMIT - results.length - 2; // Leave space for search engine entries
+        let spaceAvailable = LIMIT - results.length - 3; // Leave space for search engine entries
         if (consolidatedDomainEntries && consolidatedDomainEntries.length > 0)
           results = results.concat(
             consolidatedDomainEntries.slice(0, spaceAvailable)
