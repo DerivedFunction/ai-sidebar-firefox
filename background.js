@@ -68,11 +68,3 @@ browser.contextMenus.onClicked.addListener((info, tab) => {
     browser.runtime.sendMessage({ action: "openUrl", url: tab.url });
   }
 });
-
-// Reset state when sidebar is closed manually (Firefox-only)
-browser.sidebarAction.onClosed =
-  browser.sidebarAction.onClosed ||
-  (() => {
-    sidebarVisible = false;
-    browser.sidebarAction.setPanel({ panel: sidebarUrl });
-  });
