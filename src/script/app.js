@@ -101,15 +101,24 @@ function saveSelectedSearchEngine(engineName) {
   localStorage.setItem("selectedSearchEngine", engineName);
 }
 
-// URL validation function
 function isValidUrl(string) {
+  // First, check if it already has a protocol
   try {
     const url = new URL(string);
-    return url.protocol === "http:" || url.protocol === "https:";
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      return false;
+    }
+    // Check if hostname exists and has at least one dot (for a TLD)
+    return url.hostname.includes(".") && url.hostname.length > 2;
   } catch (_) {
+    // If it fails, try adding https:// and revalidate
     try {
       const urlWithProtocol = new URL(`https://${string}`);
-      return urlWithProtocol.protocol === "https:";
+      // Check if hostname exists and has at least one dot (for a TLD)
+      return (
+        urlWithProtocol.hostname.includes(".") &&
+        urlWithProtocol.hostname.length > 2
+      );
     } catch (_) {
       return false;
     }
@@ -391,7 +400,6 @@ function getSearchEngineQueries(results, query) {
     const bRelevance = calculateRelevance(query, b);
     return bRelevance - aRelevance; // Higher relevance first
   });
-
   return searchEngineEntries;
 }
 
@@ -434,7 +442,7 @@ function search() {
         // Deduplicate results based on N characters after the domain name
         const uniqueResults = [];
         const seenUrls = new Set();
-        const N = 20; // Adjust this value as needed
+        const N = 30; // Adjust this value as needed
         results.forEach((item) => {
           const urlObj = new URL(item.url);
           const hostname = urlObj.hostname.toLowerCase();
@@ -451,16 +459,17 @@ function search() {
         });
         results = uniqueResults;
         // Append consolidated domain entries up to LIMIT
-        if (consolidatedDomainEntries && consolidatedDomainEntries.length > 0) {
-          let spaceAvailable = LIMIT - results.length;
+        let spaceAvailable = LIMIT - results.length;
+        if (consolidatedDomainEntries && consolidatedDomainEntries.length > 0)
           results = results.concat(
             consolidatedDomainEntries.slice(0, spaceAvailable / 2)
           );
-          spaceAvailable = LIMIT - results.length;
+
+        spaceAvailable = LIMIT - results.length;
+        if (searchEngineEntries && searchEngineEntries.length > 0)
           results = results.concat(
             searchEngineEntries.slice(0, spaceAvailable)
           );
-        }
 
         results.push(fakeEntry);
 
@@ -485,13 +494,25 @@ function search() {
           a.tabIndex = 0;
 
           const parsedSearch = parseSearchEngineQuery(history.url);
+          const queryRegex = new RegExp(`(${query})`, "gi");
           if (parsedSearch) {
             a.href = parsedSearch.newUrl;
-            a.textContent = parsedSearch.query;
+            // Bold all occurrences of the query in the text content
+
+            a.innerHTML = parsedSearch.query.replace(
+              queryRegex,
+              "<strong>$1</strong>"
+            );
+
             a.dataset.originalQuery = parsedSearch.query;
           } else {
             a.href = history.url;
-            a.textContent = history.url.replace(/^https?:\/\//i, "");
+            a.innerHTML =
+              "<u>" +
+              history.url
+                .replace(/^https?:\/\//i, "")
+                .replace(queryRegex, "<strong>$1</strong>") +
+              "</u>";
           }
 
           // Skip if text doesn’t include query
@@ -755,7 +776,6 @@ function handleSearchNavigation(event) {
     event.preventDefault();
     const query = searchInput.value.trim();
     if (query.length === 0) return;
-
     if (isValidUrl(query)) {
       const url = query.startsWith("http") ? query : `https://${query}`;
       window.location.href = url;
@@ -766,6 +786,8 @@ function handleSearchNavigation(event) {
         if (link) {
           link.focus(); // Focus but don’t click
           results[0].classList.add("active"); // Add "active" to the first result
+          searchInput.value =
+            link.dataset.originalQuery || link.href || link.textContent;
         }
       }, 50);
     }

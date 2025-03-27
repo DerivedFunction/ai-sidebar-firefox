@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "AI Sidebar for Firefox",
-  "version": "3.0.0.0",
+  "version": "3.5.1.0",
   "description": "Popular AI chatbots is now available as a sidebar for Firefox. Now with a search bar",
   "icons": {
     "48": "/assets/images/icon.svg"
