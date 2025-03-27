@@ -40,6 +40,27 @@
     <div class="sidebar-container">
       <section id="quick-access-section" class="sidebar-section active">
         <ul id="quick-access" class="ai-list"></ul>
+        <button id="add-quick">New item</button>
+        <div id="add-quick-popup">
+          <label for="quick-title">Title:</label>
+          <input type="text" id="quick-title" placeholder="Enter title" />
+          <label for="quick-url">URL:</label>
+          <input
+            type="text"
+            id="quick-url"
+            placeholder="Enter URL (e.g., https://example.com)"
+          />
+          <label for="quick-icon">Icon URL:</label>
+          <input
+            type="text"
+            id="quick-icon"
+            placeholder="Enter icon URL (optional)"
+          />
+          <div class="popup-buttons">
+            <button id="quick-save">Save</button>
+            <button id="quick-cancel">Cancel</button>
+          </div>
+        </div>
       </section>
 
       <section id="ai-section" class="sidebar-section">

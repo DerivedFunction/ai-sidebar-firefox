@@ -1020,6 +1020,9 @@ function debounce(func, wait) {
 // [Previous code remains unchanged until DOMContentLoaded]
 
 // Initial load and navbar setup
+// [Previous code remains unchanged until DOMContentLoaded]
+
+// Initial load and navbar setup
 document.addEventListener("DOMContentLoaded", () => {
   tabElement = document.getElementById("tab-elements");
   updateTabList(); // Renders tabs initially
@@ -1038,8 +1041,75 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Set initial active section
   toggleSection("quick-access");
+
+  // Add Quick Access popup functionality
+  const addQuickBtn = document.getElementById("add-quick");
+  const popup = document.getElementById("add-quick-popup");
+  const saveBtn = document.getElementById("quick-save");
+  const cancelBtn = document.getElementById("quick-cancel");
+
+  addQuickBtn.addEventListener("click", () => {
+    popup.classList.add("active");
+    document.getElementById("quick-title").focus(); // Focus the title input
+  });
+
+  saveBtn.addEventListener("click", popupAction);
+
+  cancelBtn.addEventListener("click", () => {
+    popup.classList.remove("active");
+    // Clear inputs
+    document.getElementById("quick-title").value = "";
+    document.getElementById("quick-url").value = "";
+    document.getElementById("quick-icon").value = "";
+  });
 });
 
+const popupAction = () => {
+  const title = document.getElementById("quick-title").value.trim();
+  let url = document.getElementById("quick-url").value.trim();
+  const iconInput = document.getElementById("quick-icon").value.trim();
+
+  // Normalize URL: Add https:// if no protocol is specified, ignore about: URLs
+  if (url && !url.match(/^(http|https|about):/i)) {
+    url = `https://${url}`;
+  }
+  if (!url || url.startsWith("about:")) {
+    alert("Please enter a valid URL (about: URLs are not allowed).");
+    return;
+  }
+
+  // Validate URL
+  if (title && isValidUrl(url)) {
+    const pinnedItems = getPinnedItems();
+    // Attempt to get favicon if no icon is provided
+    let icon = iconInput;
+    if (!icon) {
+      try {
+        const urlObj = new URL(url);
+        icon = `https://${urlObj.hostname}/favicon.ico`;
+        // Note: We can't fetch the favicon here to verify it exists due to CORS/async limitations,
+        // so we rely on the onerror handler in createListItem to fall back if it fails
+      } catch (e) {
+        icon = "/assets/images/webpage.svg";
+      }
+    }
+
+    const newItem = { name: title, url: url, icon: icon };
+    if (!pinnedItems.some((item) => item.url === url)) {
+      pinnedItems.push(newItem);
+      savePinnedItems(pinnedItems);
+      renderQuickAccess();
+    }
+    popup.classList.remove("active");
+    // Clear inputs
+    document.getElementById("quick-title").value = "";
+    document.getElementById("quick-url").value = "";
+    document.getElementById("quick-icon").value = "";
+  } else {
+    alert("Please enter a valid title and URL.");
+  }
+};
+// [Rest of the code remains unchanged]
 // Function to toggle sections (unchanged, but included for clarity)
 function toggleSection(sectionId) {
   const sections = document.querySelectorAll(".sidebar-section");

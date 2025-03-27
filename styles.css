@@ -321,6 +321,116 @@ body {
   display: block;
 }
 
+/* Quick Access Section Styling */
+#quick-access-section {
+  padding: 10px;
+  background: var(--background);
+  position: relative; /* For positioning the popup */
+}
+
+#quick-access {
+  margin-bottom: 10px; /* Space between list and button */
+}
+
+#add-quick {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--item-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-color);
+  font-family: var(--font);
+  font-size: 0.9em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px var(--shadow-color);
+}
+
+#add-quick:hover {
+  background: var(--hover-bg);
+  border-color: var(--border-hover);
+  box-shadow: 0 4px 8px var(--shadow-hover);
+}
+
+#add-quick:active {
+  background: var(--active-bg);
+  transform: translateY(1px);
+}
+
+/* Popup Styling */
+#add-quick-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--item-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 20px;
+  box-shadow: 0 4px 12px var(--shadow-hover);
+  z-index: 100;
+  display: none; /* Hidden by default */
+  width: 300px;
+  max-width: 90%;
+}
+
+#add-quick-popup.active {
+  display: block;
+}
+
+#add-quick-popup label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 0.9em;
+  color: var(--text-color);
+}
+
+#add-quick-popup input {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--background);
+  color: var(--text-color);
+  font-family: var(--font);
+  box-sizing: border-box;
+}
+
+#add-quick-popup input:focus {
+  outline: none;
+  border-color: var(--border-hover);
+  box-shadow: 0 0 4px var(--shadow-hover);
+}
+
+#add-quick-popup button {
+  width: 48%;
+  padding: 8px;
+  margin-top: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--item-bg);
+  color: var(--text-color);
+  font-family: var(--font);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#add-quick-popup button:hover {
+  background: var(--hover-bg);
+  border-color: var(--border-hover);
+}
+
+#add-quick-popup button:active {
+  background: var(--active-bg);
+}
+
+#add-quick-popup .popup-buttons {
+  display: flex;
+  justify-content: space-between;
+}
+
 /* SVG Handling */
 .ai-icon[src$=".svg"],
 .pin-icon[src$=".svg"] {
