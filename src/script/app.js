@@ -2,47 +2,52 @@ const AI_LIST = [
   {
     name: "Grok / xAI",
     url: "https://grok.com/",
-    icon: "/assets/images/grok.svg",
+    icon: "/assets/images/ai/grok.svg",
   },
   {
     name: "Microsoft Copilot",
     url: "https://copilot.microsoft.com/",
-    icon: "/assets/images/copilot.svg",
+    icon: "/assets/images/ai/copilot.svg",
   },
   {
     name: "ChatGPT",
     url: "https://chat.openai.com/",
-    icon: "/assets/images/chatgpt.svg",
+    icon: "/assets/images/ai/chatgpt.svg",
   },
   {
     name: "Google Gemini",
     url: "https://gemini.google.com/app",
-    icon: "/assets/images/gemini.svg",
+    icon: "/assets/images/ai/gemini.svg",
   },
   {
     name: "Meta AI",
     url: "https://www.meta.ai/",
-    icon: "/assets/images/meta.svg",
+    icon: "/assets/images/ai/meta.svg",
   },
   {
     name: "HuggingChat",
     url: "https://huggingface.co/chat/",
-    icon: "/assets/images/hug.svg",
+    icon: "/assets/images/ai/hug.svg",
   },
   {
     name: "Anthropic Claude",
     url: "https://claude.ai/new",
-    icon: "/assets/images/claude.svg",
+    icon: "/assets/images/ai/claude.svg",
   },
   {
     name: "Mistral AI",
     url: "https://chat.mistral.ai/chat",
-    icon: "/assets/images/mistral.svg",
+    icon: "/assets/images/ai/mistral.svg",
   },
   {
     name: "DeepSeek",
     url: "https://chat.deepseek.com",
-    icon: "/assets/images/deepseek.svg",
+    icon: "/assets/images/ai/deepseek.svg",
+  },
+  {
+    name: "Perplexity AI",
+    url: "https://www.perplexity.ai/",
+    icon: "/assets/images/ai/perplexity.svg",
   },
 ];
 
@@ -50,32 +55,32 @@ const SEARCH_ENGINES = [
   {
     name: "Google",
     url: "https://www.google.com/search?q=",
-    image: "/assets/images/google.svg",
+    image: "/assets/images/search/google.svg",
   },
   {
     name: "DuckDuckGo",
     url: "https://duckduckgo.com/?q=",
-    image: "/assets/images/duckduckgo.svg",
+    image: "/assets/images/search/duckduckgo.svg",
   },
   {
     name: "Bing",
     url: "https://www.bing.com/search?q=",
-    image: "/assets/images/bing.svg",
+    image: "/assets/images/search/bing.svg",
   },
   {
     name: "Yahoo",
     url: "https://search.yahoo.com/search?p=",
-    image: "/assets/images/yahoo.svg",
+    image: "/assets/images/search/yahoo.svg",
   },
   {
     name: "Wikipedia",
     url: "https://en.wikipedia.org/w/index.php?search=",
-    image: "/assets/images/wikipedia.svg",
+    image: "/assets/images/search/wikipedia.svg",
   },
   {
     name: "Amazon",
     url: "https://www.amazon.com/s?k=",
-    image: "/assets/images/amazon.svg",
+    image: "/assets/images/search/amazon.svg",
   },
 ];
 
@@ -200,7 +205,7 @@ function renderSearchEngineNavbar() {
       engine.name === selectedEngine ? "active" : ""
     }`;
     const img = document.createElement("img");
-    img.src = engine.image || "/assets/images/search.svg";
+    img.src = engine.image || "/assets/images/search/search.svg";
     img.alt = `${engine.name} icon`;
     img.className = "search-engine-icon";
     button.appendChild(img);
