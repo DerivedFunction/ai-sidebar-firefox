@@ -418,7 +418,7 @@ function search() {
     browser.history
       .search({ text: query })
       .then((results) => {
-        const LIMIT = 8;
+        const LIMIT = 10;
 
         // Create a fake entry with a search engine query
         const fakeEntry = {
@@ -438,7 +438,7 @@ function search() {
         // Get all search engine queries
         const searchEngineEntries = getSearchEngineQueries(results, query);
         // Take top LIMIT results
-        results = results.slice(0, LIMIT);
+        results = results.slice(0, LIMIT - 4);
         // Deduplicate results based on N characters after the domain name
         const uniqueResults = [];
         const seenUrls = new Set();
@@ -459,10 +459,10 @@ function search() {
         });
         results = uniqueResults;
         // Append consolidated domain entries up to LIMIT
-        let spaceAvailable = LIMIT - results.length;
+        let spaceAvailable = LIMIT - results.length - 2; // Leave space for search engine entries
         if (consolidatedDomainEntries && consolidatedDomainEntries.length > 0)
           results = results.concat(
-            consolidatedDomainEntries.slice(0, spaceAvailable / 2)
+            consolidatedDomainEntries.slice(0, spaceAvailable)
           );
 
         spaceAvailable = LIMIT - results.length;
@@ -497,22 +497,48 @@ function search() {
           const queryRegex = new RegExp(`(${query})`, "gi");
           if (parsedSearch) {
             a.href = parsedSearch.newUrl;
-            // Bold all occurrences of the query in the text content
 
-            a.innerHTML = parsedSearch.query.replace(
-              queryRegex,
-              "<strong>$1</strong>"
-            );
+            // Create a text node with the query and bold the matches
+            a.textContent = ""; // Clear existing content
+
+            // Split the query by regex and process matches
+            const parts = parsedSearch.query.split(queryRegex);
+            parts.forEach((part, index) => {
+              if (index % 2 === 1) {
+                // Matches from regex
+                const bold = document.createElement("strong");
+                bold.textContent = part;
+                a.appendChild(bold);
+              } else if (part) {
+                // Non-matched text
+                a.appendChild(document.createTextNode(part));
+              }
+            });
 
             a.dataset.originalQuery = parsedSearch.query;
           } else {
             a.href = history.url;
-            a.innerHTML =
-              "<u>" +
-              history.url
-                .replace(/^https?:\/\//i, "")
-                .replace(queryRegex, "<strong>$1</strong>") +
-              "</u>";
+
+            // Clean URL and create underlined content
+            const cleanedUrl = history.url.replace(/^https?:\/\//i, "");
+            a.textContent = ""; // Clear existing content
+            const underline = document.createElement("u");
+
+            // Split the URL by regex and process matches
+            const parts = cleanedUrl.split(queryRegex);
+            parts.forEach((part, index) => {
+              if (index % 2 === 1) {
+                // Matches from regex
+                const bold = document.createElement("strong");
+                bold.textContent = part;
+                underline.appendChild(bold);
+              } else if (part) {
+                // Non-matched text
+                underline.appendChild(document.createTextNode(part));
+              }
+            });
+
+            a.appendChild(underline);
           }
 
           // Skip if text doesn’t include query
@@ -822,3 +848,12 @@ function debounce(func, wait) {
     timeout = setTimeout(later, wait);
   };
 }
+document.addEventListener("keydown", (event) => {
+  // On CTRL+A, focus the search input
+  if (event.ctrlKey && event.key === "a") {
+    event.preventDefault();
+    const searchInput = document.getElementById("search");
+    searchInput.focus();
+    searchInput.select();
+  }
+});
