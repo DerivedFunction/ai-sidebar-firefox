@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Sidebar for Firefox with AI",
-  "version": "3.6.0.0",
-  "description": "Sidebar for Firefox. Now with a search bar and popular AI tools",
+  "name": "Better SideView for Firefox with AI",
+  "version": "3.7.0.0",
+  "description": "SideView for Firefox. Now with a search bar, tabs, and popular AI tools",
   "icons": {
     "48": "/assets/images/icon.svg"
   },
@@ -31,6 +31,13 @@
   "browser_specific_settings": {
     "gecko": {
       "id": "dennyli2004@hotmail.com"
+    }
+  },
+  "page_action": {
+    "default_icon": {
+      "16": "/assets/images/icon.svg",
+      "48": "/assets/images/icon.svg",
+      "128": "/assets/images/icon.svg"
     }
   },
   "permissions": ["history", "tabs", "contextMenus"]
