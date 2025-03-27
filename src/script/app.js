@@ -174,7 +174,11 @@ function createListItem(item, isPinned) {
   link.rel = "noopener noreferrer";
 
   const icon = document.createElement("img");
-  icon.src = item.icon || "/assets/images/webpage.svg"; // Initial fallback
+  let itemDomain = new URL(item.url).hostname;
+  icon.src =
+    item.icon ||
+    `https://s2.googleusercontent.com/s2/favicons?domain=${itemDomain}` ||
+    "/assets/images/webpage.svg"; // Initial fallback
   icon.alt = `${item.name} icon`;
   icon.className = "ai-icon";
 
@@ -1062,6 +1066,15 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("quick-url").value = "";
     document.getElementById("quick-icon").value = "";
   });
+  browser.runtime.onMessage.addListener((message) => {
+    if (message.action === "resetSidebar") {
+      if (window.location.href !== sidebarUrl) {
+        window.location.href = sidebarUrl; // Reload sidebar.html
+      }
+    } else if (message.action === "openUrl" && message.url) {
+      window.location.href = message.url; // Navigate to the external URL
+    }
+  });
 });
 
 const popupAction = () => {
@@ -1086,7 +1099,7 @@ const popupAction = () => {
     if (!icon) {
       try {
         const urlObj = new URL(url);
-        icon = `https://${urlObj.hostname}/favicon.ico`;
+        icon = `https://s2.googleusercontent.com/s2/favicons?domain=${urlObj.hostname}`;
         // Note: We can't fetch the favicon here to verify it exists due to CORS/async limitations,
         // so we rely on the onerror handler in createListItem to fall back if it fails
       } catch (e) {

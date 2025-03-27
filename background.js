@@ -1,42 +1,57 @@
-browser.action.onClicked.addListener(() => {
-  browser.sidebarAction.toggle();
+// Get the full URL of sidebar.html inside the extension
+const sidebarUrl = browser.runtime.getURL("sidebar.html");
+console.log("Background script loaded, Sidebar URL:", sidebarUrl);
+
+// Persistent state for sidebar visibility
+let sidebarVisible = false;
+
+console.log("Setting up browser.action.onClicked listener");
+browser.action.onClicked.addListener((tab) => {
+  console.log("Browser action clicked, resetting to:", sidebarUrl);
+  browser.sidebarAction.setPanel({ panel: sidebarUrl }); // Reset to sidebar.html
+  browser.sidebarAction.open(); // Ensure sidebar is open
+  sidebarVisible = true;
+  // Send message to sidebar to ensure it reloads sidebar.html
+  browser.runtime.sendMessage({ action: "resetSidebar" }).catch((err) => {
+    console.log("No sidebar listener yet:", err);
+  });
 });
 
+// Context menu: Open Link in Sidebar
 browser.contextMenus.create(
   {
     id: "OpenLinkInSidebar",
     title: "Open Link in Sidebar",
     contexts: ["link"],
   },
-  // See https://extensionworkshop.com/documentation/develop/manifest-v3-migration-guide/#event-pages-and-backward-compatibility
-  // for information on the purpose of this error capture.
   () => void browser.runtime.lastError
 );
 
-// Listener for context menu item clicks. Handles the "Open Link in Sidebar" action.
 browser.contextMenus.onClicked.addListener((info) => {
-  if (info.menuItemId === "OpenLinkInSidebar") {
-    browser.sidebarAction.setPanel({ panel: info.linkUrl });
+  if (info.menuItemId === "OpenLinkInSidebar" && info.linkUrl) {
     browser.sidebarAction.open();
+    sidebarVisible = true;
+    browser.runtime.sendMessage({ action: "openUrl", url: info.linkUrl });
   }
 });
 
-// Open the link in sidebar
+// Page action: Show on HTTP/HTTPS pages and open in sidebar
 browser.tabs.onUpdated.addListener((tabId, { url }, tab) => {
   if (url && url.includes("http")) {
-    console.log(url);
-    // Show only on certain domains
+    console.log("Tab updated with URL:", url);
     browser.pageAction.show(tabId);
   }
 });
 
-// Listener for page action clicks
 browser.pageAction.onClicked.addListener((tab) => {
-  browser.sidebarAction.setPanel({ panel: tab.url });
-  browser.sidebarAction.open();
+  if (tab.url) {
+    browser.sidebarAction.open();
+    sidebarVisible = true;
+    browser.runtime.sendMessage({ action: "openUrl", url: tab.url });
+  }
 });
 
-// Add a context menu item for opening the current page in the sidebar
+// Context menu: Open Page in Sidebar
 browser.contextMenus.create(
   {
     id: "OpenPageInSidebar",
@@ -46,10 +61,18 @@ browser.contextMenus.create(
   () => void browser.runtime.lastError
 );
 
-// Listener for the "Open Page in Sidebar" context menu item
 browser.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === "OpenPageInSidebar" && tab.url) {
-    browser.sidebarAction.setPanel({ panel: tab.url });
     browser.sidebarAction.open();
+    sidebarVisible = true;
+    browser.runtime.sendMessage({ action: "openUrl", url: tab.url });
   }
 });
+
+// Reset state when sidebar is closed manually (Firefox-only)
+browser.sidebarAction.onClosed =
+  browser.sidebarAction.onClosed ||
+  (() => {
+    sidebarVisible = false;
+    browser.sidebarAction.setPanel({ panel: sidebarUrl });
+  });
