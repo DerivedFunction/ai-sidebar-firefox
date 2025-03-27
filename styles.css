@@ -210,12 +210,12 @@ body {
 }
 
 .search-engine-btn:hover {
-  background: var(--hover-bg);
+  background: white;
   border-color: var(--border-hover);
 }
 
 .search-engine-btn.active {
-  background: var(--active-bg);
+  background: white;
   border-bottom: 5px solid var(--accent-color);
 }
 
@@ -432,13 +432,11 @@ body {
 }
 
 /* SVG Handling */
-.ai-icon[src$=".svg"],
 .pin-icon[src$=".svg"] {
   filter: none; /* No filters in light mode */
 }
 
 @media (prefers-color-scheme: dark) {
-  .ai-icon[src$=".svg"],
   .pin-icon[src$=".svg"] {
     filter: brightness(0) invert(1); /* Invert to white, then adjust to light gray */
   }
