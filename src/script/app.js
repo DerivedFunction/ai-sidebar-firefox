@@ -223,7 +223,7 @@ function createSearchEngineLink(query, list, resultsContainer) {
   searchA.target = "_self";
   searchA.rel = "noopener noreferrer";
   searchA.className = "search-link";
-  searchA.textContent = `Search for "${query}" on ${engine.name}`;
+  searchA.textContent = query;
   searchA.tabIndex = 0;
   searchA.dataset.originalQuery = query; // Store original query for later use
   searchLi.appendChild(searchA);
@@ -231,6 +231,76 @@ function createSearchEngineLink(query, list, resultsContainer) {
   resultsContainer.classList.add("active");
 }
 
+function parseSearchEngineQuery(url) {
+  try {
+    const urlObj = new URL(url);
+    for (const engine of SEARCH_ENGINES) {
+      // Check if the URL starts with the engine's base URL up to the parameter
+      const baseUrlWithoutParams = engine.url.split("?")[0];
+      if (urlObj.origin + urlObj.pathname === baseUrlWithoutParams) {
+        const params = new URLSearchParams(urlObj.search);
+        let queryParam;
+        switch (engine.name) {
+          case "Google":
+          case "DuckDuckGo":
+          case "Bing":
+            queryParam = params.get("q");
+            break;
+          case "Yahoo":
+            queryParam = params.get("p");
+            break;
+          case "Wikipedia":
+            queryParam = params.get("search");
+            break;
+          case "Amazon":
+            queryParam = params.get("k");
+            break;
+          default:
+            queryParam = null;
+        }
+        if (queryParam) {
+          const decodedQuery = decodeURIComponent(queryParam);
+          const selectedEngineName = getSelectedSearchEngine();
+          const selectedEngine =
+            SEARCH_ENGINES.find((e) => e.name === selectedEngineName) ||
+            SEARCH_ENGINES[0];
+
+          // Append only the encoded query value to the pre-parameterized URL
+          const newUrl = `${selectedEngine.url}${encodeURIComponent(
+            decodedQuery
+          )}`;
+
+          // Optional: Preserve additional parameters from the original URL
+          // Uncomment the following block if you want to keep params like "client"
+          /*
+          const newParams = new URLSearchParams();
+          params.forEach((value, key) => {
+            if (key !== "q" && key !== "p" && key !== "search" && key !== "k") {
+              newParams.set(key, value);
+            }
+          });
+          const extraParams = newParams.toString();
+          const newUrlWithExtras = extraParams
+            ? `${newUrl}&${extraParams}`
+            : newUrl;
+          */
+
+          return {
+            engine: engine.name, // Original engine for display
+            query: decodedQuery,
+            newUrl: newUrl, // New URL with current engine
+            // newUrl: newUrlWithExtras, // Uncomment if preserving extra params
+          };
+        }
+      }
+    }
+    return null; // Not a recognized search engine URL
+  } catch (e) {
+    return null; // Invalid URL
+  }
+}
+
+// The search function remains mostly the same, just ensure it uses the newUrl
 function search() {
   const query = document.getElementById("search").value.trim();
   const resultsContainer = document.querySelector(".search-results");
@@ -251,18 +321,33 @@ function search() {
         if (results.length > 0) {
           const LIMIT = 7;
           results = results.slice(0, LIMIT);
+          results.sort((a, b) => {
+            const relevanceScoreA = calculateRelevance(query, a);
+            const relevanceScoreB = calculateRelevance(query, b);
+            return relevanceScoreB - relevanceScoreA;
+          });
           results.forEach((history) => {
             const li = document.createElement("p");
             li.className = "search-item";
             const a = document.createElement("a");
-            a.href = history.url;
             a.target = "_self";
             a.rel = "noopener noreferrer";
             a.className = "search-link";
-            a.textContent = history.url;
             a.tabIndex = 0;
+
+            const parsedSearch = parseSearchEngineQuery(history.url);
+            if (parsedSearch) {
+              a.href = parsedSearch.newUrl; // Use the new URL
+              a.textContent = parsedSearch.query;
+              a.dataset.originalQuery = parsedSearch.query;
+            } else {
+              a.href = history.url;
+              a.textContent = history.url;
+            }
+
             li.appendChild(a);
-            list.appendChild(li);
+            // remove duplicate entries
+            if (!list.innerHTML.includes(a.href)) list.appendChild(li);
           });
         }
       })
@@ -279,6 +364,34 @@ function search() {
   }
 }
 
+// Helper function to parse search engine URLs and extract the query
+
+// Simple relevance scoring function
+function calculateRelevance(query, historyItem) {
+  const queryLower = query.toLowerCase();
+  const title = (historyItem.title || "").toLowerCase();
+  const url = historyItem.url.toLowerCase();
+  let score = 0;
+
+  // Boost score if query appears in title or URL
+  if (title.includes(queryLower)) {
+    score += 50; // Higher weight for title match
+  }
+  if (url.includes(queryLower)) {
+    score += 30; // Lower weight for URL match
+  }
+
+  // Add a small bonus based on recency (normalize lastVisitTime)
+  const timeBonus =
+    (Date.now() - historyItem.lastVisitTime) / (1000 * 60 * 60 * 24); // Days since last visit
+  score += Math.max(0, 20 - timeBonus); // Up to 20 points for recent visits
+
+  // Add a bonus for visit frequency
+  score += Math.min(historyItem.visitCount, 10); // Cap at 10 points for visit count
+
+  return score;
+}
+
 function handleSearchNavigation(event) {
   const searchInput = document.getElementById("search");
   const list = document.getElementById("search-results");
@@ -289,15 +402,13 @@ function handleSearchNavigation(event) {
     event.preventDefault();
     const activeElement = document.activeElement;
     const searchContainer = document.querySelector(".search-container");
-
     const focusableLinks = Array.from(list.querySelectorAll("a.search-link"));
 
-    if (activeElement === searchInput) {
-      const firstLink = focusableLinks[0];
-      if (firstLink) {
-        firstLink.focus();
-        searchInput.value = firstLink.dataset.originalQuery || firstLink.href;
-      }
+    if (activeElement === searchInput && focusableLinks.length > 0) {
+      focusableLinks[0].focus();
+      searchInput.value =
+        focusableLinks[0].dataset.originalQuery || focusableLinks[0].href;
+      results[0].classList.add("active"); // Add "active" to the first result
     } else if (
       searchContainer.contains(activeElement) &&
       focusableLinks.includes(activeElement)
@@ -313,6 +424,10 @@ function handleSearchNavigation(event) {
 
       const nextLink = focusableLinks[nextIndex];
       if (nextLink) {
+        results[nextIndex].classList.add("active");
+        if (currentIndex !== nextIndex) {
+          results[currentIndex].classList.remove("active");
+        }
         nextLink.focus();
         searchInput.value = nextLink.dataset.originalQuery || nextLink.href;
       }
@@ -326,12 +441,12 @@ function handleSearchNavigation(event) {
       const url = query.startsWith("http") ? query : `https://${query}`;
       window.location.href = url;
     } else {
-      search();
+      search(); // Populate results with parseSearchEngineQuery
       setTimeout(() => {
-        const firstLink = list.querySelector("a.search-link");
-        if (firstLink) {
-          firstLink.focus();
-          firstLink.click();
+        const link = list.querySelector("a.search-link");
+        if (link) {
+          link.focus(); // Focus but don’t click
+          results[0].classList.add("active"); // Add "active" to the first result
         }
       }, 50);
     }

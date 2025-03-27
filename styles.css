@@ -257,6 +257,11 @@ body {
   padding: 8px 12px;
   border-bottom: 1px solid var(--border-color);
 }
+.search-item:hover,
+.search-item.active {
+  border-left: 3px solid var(--border-hover);
+  background: var(--hover-bg);
+}
 
 .search-item:last-child {
   border-bottom: none;
