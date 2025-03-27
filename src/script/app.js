@@ -125,6 +125,56 @@ function isValidUrl(string) {
   }
 }
 
+// Add new storage and caching functions
+function getCachedImage(url) {
+  return localStorage.getItem(`imageCache_${url}`);
+}
+
+function saveCachedImage(url, base64Data) {
+  try {
+    localStorage.setItem(`imageCache_${url}`, base64Data);
+  } catch (e) {
+    console.error("Failed to save image to localStorage (possibly full):", e);
+  }
+}
+
+async function fetchAndCacheImage(url) {
+  const cached = getCachedImage(url);
+  if (cached) return cached;
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("Failed to fetch image");
+    const blob = await response.blob();
+    const base64 = await blobToBase64(blob);
+    saveCachedImage(url, base64);
+    return base64;
+  } catch (e) {
+    console.error(`Error fetching image ${url}:`, e);
+    return "/assets/images/webpage.svg";
+  }
+}
+
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+// Add preload function
+async function preloadIcons() {
+  const allIcons = [
+    ...AI_LIST.map((item) => item.icon),
+    ...SEARCH_ENGINES.map((engine) => engine.image),
+    "/assets/images/pin.svg",
+    "/assets/images/webpage.svg",
+  ];
+  await Promise.all(allIcons.map((url) => fetchAndCacheImage(url)));
+}
+
 // Render the main list (AI or tabs), only showing unpinned items
 function renderSidebar(element, list) {
   const aiList = element; // Could be AI list or tab list container
@@ -163,7 +213,6 @@ function renderQuickAccess() {
 
 function createListItem(item, isPinned) {
   const fragment = document.createDocumentFragment();
-
   const listItem = document.createElement("li");
   listItem.className = "ai-item";
   listItem.id = `ai-item-${encodeURIComponent(item.url)}`;
@@ -174,36 +223,33 @@ function createListItem(item, isPinned) {
   link.rel = "noopener noreferrer";
 
   const icon = document.createElement("img");
-  let itemDomain = new URL(item.url).hostname;
+  const cachedIcon = getCachedImage(item.icon) || item.icon;
+  let itemDomain;
+  try {
+    itemDomain = new URL(item.url).hostname;
+  } catch (e) {
+    itemDomain = "";
+  }
   icon.src =
-    item.icon ||
+    cachedIcon ||
     `https://s2.googleusercontent.com/s2/favicons?domain=${itemDomain}` ||
-    "/assets/images/webpage.svg"; // Initial fallback
+    getCachedImage("/assets/images/webpage.svg");
   icon.alt = `${item.name} icon`;
   icon.className = "ai-icon";
 
-  // Handle icon loading errors
+  // Handle icon loading errors and cache fallback
   icon.onerror = function () {
-    let itemDomain;
-    try {
-      itemDomain = new URL(item.url).hostname;
-    } catch (e) {
-      itemDomain = null;
-    }
-
-    const match = AI_LIST.concat(tabList).find((i) => {
-      try {
-        const url = new URL(i.url);
-        const domain = url.hostname;
-        return domain === itemDomain;
-      } catch (e) {
-        return false;
-      }
-    });
-
-    icon.src = match ? match.icon : "/assets/images/webpage.svg";
+    const fallbackIcon = getCachedImage("/assets/images/webpage.svg");
+    icon.src = fallbackIcon;
     icon.onerror = null;
   };
+
+  // Fetch and cache if not already cached
+  if (!cachedIcon && item.icon) {
+    fetchAndCacheImage(item.icon).then((base64) => {
+      icon.src = base64;
+    });
+  }
 
   const name = document.createElement("span");
   name.className = "ai-name";
@@ -1021,13 +1067,9 @@ function debounce(func, wait) {
     timeout = setTimeout(later, wait);
   };
 }
-// [Previous code remains unchanged until DOMContentLoaded]
-
 // Initial load and navbar setup
-// [Previous code remains unchanged until DOMContentLoaded]
-
-// Initial load and navbar setup
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  await preloadIcons(); // Add this line at the start
   tabElement = document.getElementById("tab-elements");
   updateTabList(); // Renders tabs initially
   renderSidebar(document.getElementById("ai-elements"), AI_LIST); // Renders AI tools initially
@@ -1081,7 +1123,7 @@ const popupAction = () => {
   const title = document.getElementById("quick-title").value.trim();
   let url = document.getElementById("quick-url").value.trim();
   const iconInput = document.getElementById("quick-icon").value.trim();
-
+  const popup = document.getElementById("add-quick-popup");
   // Normalize URL: Add https:// if no protocol is specified, ignore about: URLs
   if (url && !url.match(/^(http|https|about):/i)) {
     url = `https://${url}`;
@@ -1148,11 +1190,16 @@ function toggleSection(sectionId) {
 }
 
 document.addEventListener("keydown", (event) => {
-  // On CTRL+A, focus the search input
   if (event.ctrlKey && event.key === "a") {
-    event.preventDefault();
     const searchInput = document.getElementById("search");
-    searchInput.focus();
-    searchInput.select();
+    const resultsContainer = document.querySelector(".search-results");
+    const activeElement = document.activeElement;
+
+    // Check if the active element is within the search results
+    if (resultsContainer && resultsContainer.contains(activeElement)) {
+      event.preventDefault();
+      searchInput.focus();
+      searchInput.select();
+    }
   }
 });
