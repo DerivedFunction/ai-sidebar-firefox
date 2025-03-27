@@ -1,4 +1,3 @@
-/* styles.css */
 :root {
   /* Light mode default variables */
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -6,11 +5,12 @@
   --item-bg: #ffffff;
   --text-color: #333;
   --border-color: #ddd;
-  --hover-bg: #f8f8f8;
-  --active-bg: #f0f0f0;
+  --hover-bg: #e8e8e8; /* Slightly darker for better contrast */
+  --active-bg: #d8d8d8; /* Adjusted for visibility */
   --shadow-color: rgba(0, 0, 0, 0.05);
   --shadow-hover: rgba(0, 0, 0, 0.1);
   --border-hover: #bbb;
+  --accent-color: #007bff; /* Added for active states */
 }
 
 @media (prefers-color-scheme: dark) {
@@ -25,6 +25,7 @@
     --shadow-color: rgba(0, 0, 0, 0.3);
     --shadow-hover: rgba(0, 0, 0, 0.5);
     --border-hover: #666;
+    --accent-color: #66b0ff; /* Lighter blue for dark mode */
   }
 }
 
@@ -35,12 +36,22 @@ body {
   background: var(--background);
   color: var(--text-color);
 }
+#navigation {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100px;
+  background: var(--background);
+  z-index: 100;
+}
 
 .sidebar-container {
+  margin-top: 100px;
+  padding: 10px;
   width: 100%;
   height: 100vh;
   background: var(--background);
-  padding: 10px;
   box-sizing: border-box;
 }
 
@@ -136,7 +147,6 @@ body {
 
 .pin-icon.pinned {
   opacity: 1;
-  filter: brightness(0) saturate(100%) hue-rotate(120deg); /* Green tint */
 }
 
 .pin:hover .pin-icon {
@@ -175,27 +185,28 @@ body {
   color: var(--text-color);
   opacity: 0.6;
 }
-.search-engine-nav {
-  padding: 5px 12px !important; /* Override search-item padding for navbar */
-  border-bottom: 1px solid var(--border-color);
-}
 
 #search-engine-navbar {
   display: flex;
   gap: 5px;
-  padding: 5px 5px;
-  background: var(--item-bg); /* Matches dropdown background */
+  padding: 5px;
+  background: var(--item-bg);
 }
 
 .search-engine-btn {
-  background: var(--background);
+  height: 25px;
+  width: 25px;
+  padding: 0;
+  background: white;
   border: 1px solid var(--border-color);
   border-radius: 4px;
-  padding: 4px 8px;
-  color: var(--text-color);
   cursor: pointer;
-  font-size: 0.8em;
   transition: all 0.2s ease;
+}
+
+.search-engine-btn img {
+  width: 100%;
+  height: 100%;
 }
 
 .search-engine-btn:hover {
@@ -205,8 +216,7 @@ body {
 
 .search-engine-btn.active {
   background: var(--active-bg);
-  border-color: var(--border-hover);
-  font-weight: bold;
+  border-bottom: 5px solid var(--accent-color);
 }
 
 .search-results {
@@ -224,24 +234,7 @@ body {
   z-index: 10;
   display: none;
 }
-.search-engine-btn {
-  height: 25px;
-  width: 25px;
-  padding: 0;
-  background-color: white;
-  border: none;
-}
 
-.search-engine-btn.active {
-  height: 25px;
-  padding: 0;
-  background-color: white;
-  border-bottom: 5px solid var(--border-hover);
-}
-.search-engine-btn img {
-  width: 100%;
-  height: 100%;
-}
 .search-results.active {
   display: block;
 }
@@ -257,9 +250,10 @@ body {
   padding: 8px 12px;
   border-bottom: 1px solid var(--border-color);
 }
+
 .search-item:hover,
 .search-item.active {
-  border-left: 3px solid var(--border-hover);
+  border-left: 3px solid var(--accent-color);
   background: var(--hover-bg);
 }
 
@@ -286,22 +280,56 @@ body {
 }
 
 .search-item a:focus {
-  outline: 2px solid var(--border-hover);
+  outline: 2px solid var(--accent-color);
   outline-offset: 2px;
   background: var(--hover-bg);
 }
 
-/* SVG icon adjustments */
+/* Sidebar Navigation */
+.sidebar-nav {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.nav-btn {
+  background: none;
+  border: none;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-color);
+  transition: all 0.3s ease;
+}
+
+.nav-btn:hover {
+  background: var(--hover-bg);
+}
+
+.nav-btn.active {
+  border-bottom: 2px solid var(--accent-color);
+  color: var(--accent-color);
+  font-weight: bold;
+}
+
+.sidebar-section {
+  display: none;
+}
+
+.sidebar-section.active {
+  display: block;
+}
+
+/* SVG Handling */
+.ai-icon[src$=".svg"],
+.pin-icon[src$=".svg"] {
+  filter: none; /* No filters in light mode */
+}
+
 @media (prefers-color-scheme: dark) {
   .ai-icon[src$=".svg"],
   .pin-icon[src$=".svg"] {
-    filter: brightness(0) invert(1);
-  }
-}
-
-@media (prefers-color-scheme: light) {
-  .ai-icon[src$=".svg"],
-  .pin-icon[src$=".svg"] {
-    filter: invert(0);
+    filter: brightness(0) invert(1); /* Invert to white, then adjust to light gray */
   }
 }

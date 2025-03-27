@@ -1,4 +1,3 @@
-<!-- sidebar.html -->
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -13,28 +12,48 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div class="search-container">
-      <input
-        type="text"
-        id="search"
-        placeholder="Search or enter web address..."
-        autocomplete="on"
-      />
-
-      <div class="search-results">
-        <ul id="search-results"></ul>
-        <div id="search-engine-navbar"></div>
+    <div id="navigation">
+      <div class="search-container">
+        <input
+          type="text"
+          id="search"
+          placeholder="Search or enter web address..."
+          autocomplete="on"
+        />
+        <div class="search-results">
+          <ul id="search-results"></ul>
+          <div id="search-engine-navbar"></div>
+        </div>
       </div>
+      <nav class="sidebar-nav">
+        <button class="nav-btn active" data-section="quick-access">
+          Quick Access
+        </button>
+        <button class="nav-btn" data-section="ai">AI Tools</button>
+        <button class="nav-btn" data-section="tabs">Tabs</button>
+        <button class="nav-btn" data-section="most-visited">
+          Most Visited
+        </button>
+        <!-- New button -->
+      </nav>
     </div>
     <div class="sidebar-container">
-      <header class="sidebar-header">
-        <h1>Quick Access</h1>
-      </header>
-      <ul id="quick-access" class="ai-list"></ul>
-      <header class="sidebar-header">
-        <h1><img src="/assets/images/icon.svg" alt="icon" />AI Tools</h1>
-      </header>
-      <ul id="ai-elements" class="ai-list"></ul>
+      <section id="quick-access-section" class="sidebar-section active">
+        <ul id="quick-access" class="ai-list"></ul>
+      </section>
+
+      <section id="ai-section" class="sidebar-section">
+        <ul id="ai-elements" class="ai-list"></ul>
+      </section>
+
+      <section id="tabs-section" class="sidebar-section">
+        <ul id="tab-elements" class="ai-list"></ul>
+      </section>
+
+      <!-- New Most Visited Section -->
+      <section id="most-visited-section" class="sidebar-section">
+        <ul id="most-visited-elements" class="ai-list"></ul>
+      </section>
     </div>
     <script src="/src/script/app.js"></script>
   </body>

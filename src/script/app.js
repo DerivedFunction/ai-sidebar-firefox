@@ -125,74 +125,133 @@ function isValidUrl(string) {
   }
 }
 
-function renderSidebar() {
-  const aiList = document.getElementById("ai-elements");
-  const quickAccessList = document.getElementById("quick-access");
-  aiList.innerHTML = "";
-  quickAccessList.innerHTML = "";
+// Render the main list (AI or tabs), only showing unpinned items
+function renderSidebar(element, list) {
+  const aiList = element; // Could be AI list or tab list container
+  aiList.innerHTML = ""; // Clear the list
 
   const pinnedItems = getPinnedItems();
+  const fragment = document.createDocumentFragment(); // Use a fragment for better performance
 
-  pinnedItems.forEach((pinned) => {
-    const ai = AI_LIST.find((item) => item.url === pinned.url);
-    if (ai) quickAccessList.appendChild(createListItem(ai, true));
+  // Render only unpinned items
+  list.forEach((item) => {
+    const isPinned = pinnedItems.some((pinned) => pinned.url === item.url);
+    if (!isPinned) {
+      const listItem = createListItem(item, false);
+      fragment.appendChild(listItem);
+    }
   });
 
-  AI_LIST.forEach((ai) => {
-    const isPinned = pinnedItems.some((pinned) => pinned.url === ai.url);
-    aiList.appendChild(createListItem(ai, isPinned));
-  });
-
-  if (typeof browser !== "undefined") {
-    browser.sidebarAction.setPanel({ panel: "sidebar.html" });
-  }
+  aiList.appendChild(fragment); // Append the fragment to the container
 }
 
-function createListItem(ai, isPinned) {
+// New function to render quick-access independently
+function renderQuickAccess() {
+  const quickAccessList = document.getElementById("quick-access");
+  quickAccessList.innerHTML = ""; // Clear the quick-access list
+  const pinnedItems = getPinnedItems();
+  if (pinnedItems.length == 0) {
+    quickAccessList.textContent = "No pinned items yet.";
+    return;
+  }
+  // Render pinned items
+  pinnedItems.forEach((pinned) => {
+    const listItem = createListItem(pinned, true);
+    quickAccessList.appendChild(listItem);
+  });
+}
+
+function createListItem(item, isPinned) {
+  const fragment = document.createDocumentFragment();
+
   const listItem = document.createElement("li");
   listItem.className = "ai-item";
-  listItem.id = `ai-item-${AI_LIST.findIndex((item) => item.url === ai.url)}`;
+  listItem.id = `ai-item-${encodeURIComponent(item.url)}`;
 
   const link = document.createElement("a");
-  link.href = ai.url;
+  link.href = item.url;
   link.target = "_self";
   link.rel = "noopener noreferrer";
 
   const icon = document.createElement("img");
-  icon.src = ai.icon;
-  icon.alt = `${ai.name} icon`;
+  icon.src = item.icon || "/assets/images/webpage.svg"; // Initial fallback
+  icon.alt = `${item.name} icon`;
   icon.className = "ai-icon";
+
+  // Handle icon loading errors
+  icon.onerror = function () {
+    let itemDomain;
+    try {
+      itemDomain = new URL(item.url).hostname;
+    } catch (e) {
+      itemDomain = null;
+    }
+
+    const match = AI_LIST.concat(tabList).find((i) => {
+      try {
+        const url = new URL(i.url);
+        const domain = url.hostname;
+        return domain === itemDomain;
+      } catch (e) {
+        return false;
+      }
+    });
+
+    icon.src = match ? match.icon : "/assets/images/webpage.svg";
+    icon.onerror = null;
+  };
 
   const name = document.createElement("span");
   name.className = "ai-name";
-  name.textContent = ai.name;
-
-  const pin = document.createElement("button");
-  pin.className = "pin";
-  pin.title = isPinned ? "Unpin" : "Pin";
-  const pinIcon = document.createElement("img");
-  pinIcon.src = "/assets/images/pin.svg";
-  pinIcon.alt = "Pin icon";
-  pinIcon.className = `pin-icon ${isPinned ? "pinned" : ""}`;
+  name.textContent = item.name;
 
   link.appendChild(icon);
   link.appendChild(name);
   listItem.appendChild(link);
-  pin.appendChild(pinIcon);
-  listItem.appendChild(pin);
 
-  pin.addEventListener("click", () => {
-    const pinnedItems = getPinnedItems();
-    if (isPinned) {
-      savePinnedItems(pinnedItems.filter((item) => item.url !== ai.url));
-    } else {
-      pinnedItems.push({ name: ai.name, url: ai.url, icon: ai.icon });
+  if (!item.url.startsWith("about:")) {
+    const pin = document.createElement("button");
+    pin.className = "pin";
+    pin.title = isPinned ? "Unpin" : "Pin";
+
+    const pinIcon = document.createElement("img");
+    pinIcon.src = "/assets/images/pin.svg";
+    pinIcon.alt = "Pin icon";
+    pinIcon.className = `pin-icon ${isPinned ? "pinned" : ""}`;
+
+    pin.appendChild(pinIcon);
+    listItem.appendChild(pin);
+
+    pin.addEventListener("click", (e) => {
+      e.preventDefault();
+      const pinnedItems = getPinnedItems();
+      const itemIndex = pinnedItems.findIndex((i) => i.url === item.url);
+
+      if (isPinned && itemIndex !== -1) {
+        // Unpin: Remove from pinnedItems
+        pinnedItems.splice(itemIndex, 1);
+        pinIcon.classList.remove("pinned");
+        pin.title = "Pin";
+      } else if (!isPinned && itemIndex === -1) {
+        // Pin: Add only if not already pinned
+        pinnedItems.push({ name: item.name, url: item.url, icon: item.icon });
+        pinIcon.classList.add("pinned");
+        pin.title = "Unpin";
+      } else {
+        // Item is already pinned but marked unpinned in UI (edge case), do nothing
+        return;
+      }
+
       savePinnedItems(pinnedItems);
-    }
-    renderSidebar();
-  });
+      renderSidebar(document.getElementById("ai-elements"), AI_LIST);
+      updateTabList();
+      renderQuickAccess();
+      renderMostVisited();
+    });
+  }
 
-  return listItem;
+  fragment.appendChild(listItem);
+  return fragment;
 }
 
 function renderSearchEngineNavbar() {
@@ -819,6 +878,78 @@ function handleSearchNavigation(event) {
     }
   }
 }
+let historyItems = [];
+
+function renderMostVisited() {
+  const mostVisitedList = document.getElementById("most-visited-elements");
+  mostVisitedList.innerHTML = ""; // Clear the list
+
+  if (typeof browser !== "undefined" && browser.history) {
+    if (historyItems.length === 0) {
+      // Query browser history for the last 30 days (only if not already fetched)
+      const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+      browser.history
+        .search({
+          text: "",
+          startTime: thirtyDaysAgo,
+          maxResults: 1000, // Fetch a large sample to analyze
+        })
+        .then((fetchedItems) => {
+          historyItems = fetchedItems; // Cache the history items globally
+          renderMostVisitedFromCache(); // Render after fetching
+        })
+        .catch((error) => {
+          console.error("Error fetching history:", error);
+          mostVisitedList.innerHTML =
+            "<li>Error loading most visited sites</li>";
+        });
+    } else {
+      // Use cached historyItems to render
+      renderMostVisitedFromCache();
+    }
+  } else {
+    mostVisitedList.innerHTML = "<li>History API not available</li>";
+  }
+}
+
+// Helper function to render from cached historyItems
+function renderMostVisitedFromCache() {
+  const mostVisitedList = document.getElementById("most-visited-elements");
+  mostVisitedList.innerHTML = ""; // Clear the list again for safety
+
+  // Aggregate visit counts by domain
+  const domainVisits = {};
+  historyItems.forEach((item) => {
+    try {
+      const url = new URL(item.url);
+      const domain = url.hostname;
+      if (!domainVisits[domain]) {
+        domainVisits[domain] = {
+          url: `https://${domain}`,
+          name: domain,
+          icon: `https://${domain}/favicon.ico`, // Attempt to fetch favicon
+          visitCount: 0,
+        };
+      }
+      domainVisits[domain].visitCount += item.visitCount || 1;
+    } catch (e) {
+      console.error("Invalid URL in history:", item.url);
+    }
+  });
+
+  // Convert to array and sort by visit count
+  const mostVisited = Object.values(domainVisits)
+    .sort((a, b) => b.visitCount - a.visitCount)
+    .slice(0, 10); // Top 10 most visited
+
+  // Render the list
+  const pinnedItems = getPinnedItems();
+  mostVisited.forEach((item) => {
+    const isPinned = pinnedItems.some((pinned) => pinned.url === item.url);
+    const listItem = createListItem(item, isPinned);
+    mostVisitedList.appendChild(listItem);
+  });
+}
 
 // Event listeners
 document.addEventListener("keydown", handleSearchNavigation);
@@ -835,7 +966,45 @@ document.addEventListener("click", (e) => {
     resultsContainer.classList.remove("active");
   }
 });
-document.addEventListener("DOMContentLoaded", renderSidebar);
+// Debounced version of updateTabList to prevent rapid successive calls
+const debouncedUpdateTabList = debounce(updateTabList, 1000);
+
+// Event listeners for tab changes
+browser.tabs.onCreated.addListener((tab) => {
+  debouncedUpdateTabList();
+});
+
+browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  debouncedUpdateTabList();
+});
+
+browser.tabs.onRemoved.addListener((tabId, removeInfo) => {
+  debouncedUpdateTabList();
+});
+
+let tabElement = null;
+let tabList = [];
+
+// Main function to update tab list
+function updateTabList() {
+  tabList = [];
+  browser.tabs
+    .query({})
+    .then((tabs) => {
+      tabs.forEach((tab) => {
+        let tabData = {
+          name: tab.title,
+          url: tab.url,
+          icon: tab.favIconUrl,
+        };
+        tabList.push(tabData);
+      });
+      renderSidebar(tabElement, tabList);
+    })
+    .catch((error) => {
+      console.error("Error querying tabs:", error);
+    });
+}
 
 function debounce(func, wait) {
   let timeout;
@@ -848,6 +1017,53 @@ function debounce(func, wait) {
     timeout = setTimeout(later, wait);
   };
 }
+// [Previous code remains unchanged until DOMContentLoaded]
+
+// Initial load and navbar setup
+document.addEventListener("DOMContentLoaded", () => {
+  tabElement = document.getElementById("tab-elements");
+  updateTabList(); // Renders tabs initially
+  renderSidebar(document.getElementById("ai-elements"), AI_LIST); // Renders AI tools initially
+  renderQuickAccess(); // Renders quick access initially
+  renderMostVisited(); // Renders most visited initially
+
+  // Set up navbar toggling
+  const navButtons = document.querySelectorAll(".nav-btn");
+  navButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const section = button.getAttribute("data-section");
+      toggleSection(section);
+    });
+  });
+
+  // Set initial active section
+  toggleSection("quick-access");
+});
+
+// Function to toggle sections (unchanged, but included for clarity)
+function toggleSection(sectionId) {
+  const sections = document.querySelectorAll(".sidebar-section");
+  const buttons = document.querySelectorAll(".nav-btn");
+
+  // Update button states
+  buttons.forEach((btn) => {
+    if (btn.getAttribute("data-section") === sectionId) {
+      btn.classList.add("active");
+    } else {
+      btn.classList.remove("active");
+    }
+  });
+
+  // Update section visibility
+  sections.forEach((section) => {
+    if (section.id === `${sectionId}-section`) {
+      section.classList.add("active");
+    } else {
+      section.classList.remove("active");
+    }
+  });
+}
+
 document.addEventListener("keydown", (event) => {
   // On CTRL+A, focus the search input
   if (event.ctrlKey && event.key === "a") {

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "AI Sidebar for Firefox",
-  "version": "3.5.2.0",
-  "description": "Popular AI chatbots is now available as a sidebar for Firefox. Now with a search bar",
+  "name": "Sidebar for Firefox with AI",
+  "version": "3.6.0.0",
+  "description": "Sidebar for Firefox. Now with a search bar and popular AI tools",
   "icons": {
     "48": "/assets/images/icon.svg"
   },
@@ -25,7 +25,7 @@
       "48": "/assets/images/icon.svg",
       "128": "/assets/images/icon.svg"
     },
-    "default_title": "AI Sidebar",
+    "default_title": "Sidebar with AI",
     "default_popup": "sidebar.html"
   },
   "browser_specific_settings": {
@@ -33,5 +33,5 @@
       "id": "dennyli2004@hotmail.com"
     }
   },
-  "permissions": ["history"]
+  "permissions": ["history", "tabs", "contextMenus"]
 }
