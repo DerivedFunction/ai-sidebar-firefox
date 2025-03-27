@@ -212,25 +212,6 @@ function renderSearchEngineNavbar() {
   });
 }
 
-function createSearchEngineLink(query, list, resultsContainer) {
-  const selectedEngine = getSelectedSearchEngine();
-  const engine =
-    SEARCH_ENGINES.find((e) => e.name === selectedEngine) || SEARCH_ENGINES[0];
-  const searchLi = document.createElement("p");
-  searchLi.className = "search-item";
-  const searchA = document.createElement("a");
-  searchA.href = `${engine.url}${encodeURIComponent(query)}`;
-  searchA.target = "_self";
-  searchA.rel = "noopener noreferrer";
-  searchA.className = "search-link";
-  searchA.textContent = query;
-  searchA.tabIndex = 0;
-  searchA.dataset.originalQuery = query; // Store original query for later use
-  searchLi.appendChild(searchA);
-  list.appendChild(searchLi);
-  resultsContainer.classList.add("active");
-}
-
 function parseSearchEngineQuery(url) {
   try {
     const urlObj = new URL(url);
@@ -300,7 +281,63 @@ function parseSearchEngineQuery(url) {
   }
 }
 
-// The search function remains mostly the same, just ensure it uses the newUrl
+function consolidateHighlyRelevantDomains(results, query) {
+  const domainStats = {};
+  const queryLower = query.toLowerCase();
+
+  // Group results by main domain and collect stats
+  results.forEach((item) => {
+    const urlObj = new URL(item.url);
+    const hostname = urlObj.hostname.toLowerCase();
+    const domainParts = hostname.split(".");
+    const mainDomain =
+      domainParts.length > 2
+        ? domainParts.slice(-2).join(".") // e.g., "stackoverflow.com"
+        : hostname;
+
+    if (!domainStats[mainDomain]) {
+      domainStats[mainDomain] = {
+        urls: [],
+        totalVisitCount: 0,
+        latestVisitTime: 0,
+        relevanceScore: 0,
+      };
+    }
+
+    domainStats[mainDomain].urls.push(item.url);
+    domainStats[mainDomain].totalVisitCount += item.visitCount || 1;
+    domainStats[mainDomain].latestVisitTime = Math.max(
+      domainStats[mainDomain].latestVisitTime,
+      item.lastVisitTime || 0
+    );
+    domainStats[mainDomain].relevanceScore = Math.max(
+      domainStats[mainDomain].relevanceScore,
+      calculateRelevance(query, item)
+    );
+  });
+
+  // Find the most relevant domain to consolidate (if any)
+  let consolidatedDomainEntry = null;
+  for (const mainDomain in domainStats) {
+    const stats = domainStats[mainDomain];
+    const appearsMultipleTimes = stats.urls.length > 1;
+    const isHighlyRelevant =
+      stats.relevanceScore > 50 || mainDomain.includes(queryLower);
+
+    if (appearsMultipleTimes && isHighlyRelevant) {
+      consolidatedDomainEntry = {
+        url: `https://${mainDomain}`,
+        title: mainDomain,
+        lastVisitTime: stats.latestVisitTime,
+        visitCount: stats.totalVisitCount,
+      };
+      break; // Only take the first qualifying domain (or adjust logic for multiple)
+    }
+  }
+
+  return consolidatedDomainEntry;
+}
+
 function search() {
   const query = document.getElementById("search").value.trim();
   const resultsContainer = document.querySelector(".search-results");
@@ -312,44 +349,74 @@ function search() {
     return;
   }
 
-  createSearchEngineLink(query, list, resultsContainer);
-
   if (typeof browser !== "undefined" && browser.history) {
     browser.history
       .search({ text: query })
       .then((results) => {
-        if (results.length > 0) {
-          const LIMIT = 7;
-          results = results.slice(0, LIMIT);
-          results.sort((a, b) => {
-            const relevanceScoreA = calculateRelevance(query, a);
-            const relevanceScoreB = calculateRelevance(query, b);
-            return relevanceScoreB - relevanceScoreA;
-          });
-          results.forEach((history) => {
-            const li = document.createElement("p");
-            li.className = "search-item";
-            const a = document.createElement("a");
-            a.target = "_self";
-            a.rel = "noopener noreferrer";
-            a.className = "search-link";
-            a.tabIndex = 0;
+        const LIMIT = 7;
 
-            const parsedSearch = parseSearchEngineQuery(history.url);
-            if (parsedSearch) {
-              a.href = parsedSearch.newUrl; // Use the new URL
-              a.textContent = parsedSearch.query;
-              a.dataset.originalQuery = parsedSearch.query;
-            } else {
-              a.href = history.url;
-              a.textContent = history.url;
-            }
+        // Create a fake entry with a search engine query
+        const fakeEntry = {
+          url: `${
+            SEARCH_ENGINES.find((e) => e.name === getSelectedSearchEngine()).url
+          }${encodeURIComponent(query)}`,
+          title: query,
+          lastVisitTime: Date.now(),
+          visitCount: 1,
+        };
 
-            li.appendChild(a);
-            // remove duplicate entries
-            if (!list.innerHTML.includes(a.href)) list.appendChild(li);
-          });
+        // Take top LIMIT results
+        results = results.slice(0, LIMIT);
+
+        // Get a consolidated domain entry (if any)
+        const consolidatedDomainEntry = consolidateHighlyRelevantDomains(
+          results,
+          query
+        );
+
+        // Sort all entries by relevance
+        results.sort((a, b) => {
+          const relevanceScoreA = calculateRelevance(query, a);
+          const relevanceScoreB = calculateRelevance(query, b);
+          return relevanceScoreB - relevanceScoreA;
+        });
+        if (consolidatedDomainEntry) {
+          results.push(consolidatedDomainEntry); // Append to end
         }
+        results.push(fakeEntry);
+
+        // Render all sorted results
+        results.forEach((history) => {
+          const li = document.createElement("p");
+          li.className = "search-item";
+          const a = document.createElement("a");
+          a.target = "_self";
+          a.rel = "noopener noreferrer";
+          a.className = "search-link";
+          a.tabIndex = 0;
+
+          const parsedSearch = parseSearchEngineQuery(history.url);
+          if (parsedSearch) {
+            a.href = parsedSearch.newUrl;
+            a.textContent = parsedSearch.query;
+            a.dataset.originalQuery = parsedSearch.query;
+          } else {
+            a.href = history.url;
+            a.textContent = history.url.replace(/^https?:\/\//i, "");
+          }
+
+          li.appendChild(a);
+          if (!a.textContent.toLowerCase().includes(query.toLowerCase()))
+            return;
+
+          if (
+            !list.innerHTML.includes(a.href) ||
+            !list.innerHTML.includes(a.textContent)
+          )
+            list.appendChild(li);
+        });
+
+        resultsContainer.classList.add("active");
       })
       .catch((error) => {
         console.error(error);
@@ -365,31 +432,156 @@ function search() {
 }
 
 // Helper function to parse search engine URLs and extract the query
-
-// Simple relevance scoring function
 function calculateRelevance(query, historyItem) {
   const queryLower = query.toLowerCase();
   const title = (historyItem.title || "").toLowerCase();
-  const url = historyItem.url.toLowerCase();
   let score = 0;
 
-  // Boost score if query appears in title or URL
-  if (title.includes(queryLower)) {
-    score += 50; // Higher weight for title match
-  }
-  if (url.includes(queryLower)) {
-    score += 30; // Lower weight for URL match
+  const commonTlds = [
+    "com",
+    "edu",
+    "org",
+    "net",
+    "gov",
+    "io",
+    "co",
+    "uk",
+    "ca",
+    "de",
+  ];
+  const urlObj = new URL(historyItem.url);
+  const hostname = urlObj.hostname.toLowerCase();
+  const domainParts = hostname.split(".").filter((part) => part.length > 0);
+  const path = urlObj.pathname.toLowerCase();
+  const pathSegments = path.split("/").filter((segment) => segment.length > 0);
+
+  const parsedSearch = parseSearchEngineQuery(historyItem.url);
+  if (parsedSearch) {
+    const searchTerm = parsedSearch.query.toLowerCase();
+    if (searchTerm.includes(queryLower)) {
+      score += 50;
+      const searchTermPosition = searchTerm.indexOf(queryLower);
+      score += Math.max(20 - Math.floor(searchTermPosition / 5), 0);
+      if (searchTermPosition === 0) {
+        score += 50; // First-letter bonus
+      }
+      // Count multiple matches in search term
+      let matchCount = 0;
+      let pos = -1;
+      while ((pos = searchTerm.indexOf(queryLower, pos + 1)) !== -1) {
+        matchCount++;
+        if (pos > 0) score += 10; // Additional matches beyond the first
+      }
+    }
+    if (title.includes(queryLower)) {
+      score += 30;
+      const titlePosition = title.indexOf(queryLower);
+      score += Math.max(10 - Math.floor(titlePosition / 5), 0);
+      if (titlePosition === 0) {
+        score += 50; // First-letter bonus
+      }
+      // Count multiple matches in title
+      let matchCount = 0;
+      let pos = -1;
+      while ((pos = title.indexOf(queryLower, pos + 1)) !== -1) {
+        matchCount++;
+        if (pos > 0) score += 10; // Additional matches beyond the first
+      }
+    }
+    score -= 40;
+  } else {
+    const url = historyItem.url.toLowerCase();
+    const hasUuidLike = pathSegments.some(
+      (segment) =>
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(
+          segment
+        ) || segment.length > 15
+    );
+
+    if (title.includes(queryLower)) {
+      score += 50; // Base title match
+      const titlePosition = title.indexOf(queryLower);
+      score += Math.max(10 - Math.floor(titlePosition / 5), 0);
+      if (titlePosition === 0) {
+        score += 50; // First-letter bonus
+      }
+      // Count multiple matches in title
+      let matchCount = 0;
+      let pos = -1;
+      while ((pos = title.indexOf(queryLower, pos + 1)) !== -1) {
+        matchCount++;
+        if (pos > 0) score += 10; // Additional matches beyond the first
+      }
+    }
+    if (url.includes(queryLower) && !hasUuidLike) {
+      score += 30; // Base URL match
+      const urlPosition = url.indexOf(queryLower);
+      score += Math.max(15 - Math.floor(urlPosition / 10), 0);
+      if (
+        urlPosition === 0 ||
+        url.indexOf(queryLower, "https://".length) === "https://".length
+      ) {
+        score += 50; // First-letter bonus
+      }
+      // Count multiple matches in URL
+      let matchCount = 0;
+      let pos = -1;
+      while ((pos = url.indexOf(queryLower, pos + 1)) !== -1) {
+        matchCount++;
+        if (pos > 0) score += 10; // Additional matches beyond the first
+      }
+
+      const meaningfulDomainParts = domainParts.filter(
+        (part) => !commonTlds.includes(part)
+      );
+      const domainMatchCount = meaningfulDomainParts.filter((part) =>
+        part.includes(queryLower)
+      ).length;
+      score += domainMatchCount * 20;
+      if (domainMatchCount > 0) {
+        const firstDomainMatchPosition = meaningfulDomainParts.findIndex(
+          (part) => part.includes(queryLower)
+        );
+        score += Math.max(10 - firstDomainMatchPosition * 5, 0);
+        if (meaningfulDomainParts.some((part) => part.startsWith(queryLower))) {
+          score += 50; // First-letter bonus in domain
+        }
+      }
+    } else if (url.includes(queryLower) && hasUuidLike) {
+      score += 30; // Base URL match only, no extra for multiple matches
+      const urlPosition = url.indexOf(queryLower);
+      score += Math.max(15 - Math.floor(urlPosition / 10), 0);
+    }
+
+    const hasUrlWithinUrl =
+      /url=https?:\/\//i.test(url) ||
+      /https?:\/\/[^/]+\/[^?]+https?:\/\//i.test(url);
+    if (hasUrlWithinUrl) {
+      score -= 50;
+    }
+
+    if (hasUuidLike) {
+      score -= 60;
+    } else {
+      if (queryLower.length <= 2 && pathSegments.length <= 1) {
+        score -= 30;
+      } else {
+        const pathMatchCount = pathSegments.filter((segment) =>
+          segment.includes(queryLower)
+        ).length;
+        score += pathMatchCount * 15;
+      }
+      score -= Math.min(pathSegments.length * 10, 50);
+      score -= Math.min(path.length, 30);
+    }
   }
 
-  // Add a small bonus based on recency (normalize lastVisitTime)
   const timeBonus =
-    (Date.now() - historyItem.lastVisitTime) / (1000 * 60 * 60 * 24); // Days since last visit
-  score += Math.max(0, 20 - timeBonus); // Up to 20 points for recent visits
+    (Date.now() - historyItem.lastVisitTime) / (1000 * 60 * 60 * 24);
+  score += Math.max(0, 20 - timeBonus);
+  score += Math.min(historyItem.visitCount * 2, 20);
 
-  // Add a bonus for visit frequency
-  score += Math.min(historyItem.visitCount, 10); // Cap at 10 points for visit count
-
-  return score;
+  return Math.max(score, -50);
 }
 
 function handleSearchNavigation(event) {
