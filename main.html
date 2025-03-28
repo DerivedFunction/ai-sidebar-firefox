@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Tools Sidebar</title>
+    <link
+      rel="shortcut icon"
+      href="/assets/images/icon.svg"
+      type="image/x-icon"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="navigation">
+      <div class="search-container">
+        <input
+          type="text"
+          id="search"
+          placeholder="Search or enter web address..."
+          autocomplete="on"
+        />
+        <div class="search-results">
+          <ul id="search-results"></ul>
+          <div id="search-engine-navbar"></div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <button class="nav-btn active" data-section="quick-access">
+          Quick Access
+        </button>
+        <button class="nav-btn" data-section="ai">AI Tools</button>
+        <button class="nav-btn" data-section="tabs">Tabs</button>
+        <button class="nav-btn" data-section="most-visited">
+          Most Visited
+        </button>
+        <!-- New button -->
+      </nav>
+    </div>
+    <div class="sidebar-container">
+      <section id="quick-access-section" class="sidebar-section active">
+        <ul id="quick-access" class="ai-list"></ul>
+        <button id="add-quick" class="quick-btn">New item</button>
+
+        <div id="add-quick-popup" class="popup">
+          <label for="quick-title">Title:</label>
+          <input type="text" id="quick-title" placeholder="Enter title" />
+          <label for="quick-url">URL:</label>
+          <input
+            type="text"
+            id="quick-url"
+            placeholder="Enter URL (e.g., https://example.com)"
+          />
+          <label for="quick-icon">Icon URL:</label>
+          <input
+            type="text"
+            id="quick-icon"
+            placeholder="Enter icon URL (optional)"
+          />
+          <div class="popup-buttons">
+            <button id="quick-save">Save</button>
+            <button id="quick-cancel">Cancel</button>
+          </div>
+        </div>
+        <button id="set-url" class="quick-btn">Clear/Set Default URL</button>
+      </section>
+
+      <section id="ai-section" class="sidebar-section">
+        <ul id="ai-elements" class="ai-list"></ul>
+      </section>
+
+      <section id="tabs-section" class="sidebar-section">
+        <ul id="tab-elements" class="ai-list"></ul>
+      </section>
+
+      <!-- New Most Visited Section -->
+      <section id="most-visited-section" class="sidebar-section">
+        <ul id="most-visited-elements" class="ai-list"></ul>
+      </section>
+    </div>
+    <script src="/src/script/app.js"></script>
+    <div id="set-url-popup"></div>
+    <footer style="width: 600px">
+      Some external links may not be the correct size.
+    </footer>
+  </body>
+</html>

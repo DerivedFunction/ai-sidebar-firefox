@@ -1,51 +1,51 @@
 const AI_LIST = [
   {
-    name: "Grok / xAI",
+    name: "Grok / xAI", //Yes
     url: "https://grok.com/",
     icon: "/assets/images/ai/grok.svg",
   },
   {
-    name: "Microsoft Copilot",
+    name: "Microsoft Copilot", //Yes
     url: "https://copilot.microsoft.com/",
     icon: "/assets/images/ai/copilot.svg",
   },
   {
-    name: "ChatGPT",
+    name: "ChatGPT", //Yes
     url: "https://chat.openai.com/",
     icon: "/assets/images/ai/chatgpt.svg",
   },
   {
-    name: "Google Gemini",
+    name: "Google Gemini", //No
     url: "https://gemini.google.com/app",
     icon: "/assets/images/ai/gemini.svg",
   },
   {
-    name: "Meta AI",
+    name: "Meta AI", //Not really
     url: "https://www.meta.ai/",
     icon: "/assets/images/ai/meta.svg",
   },
   {
-    name: "HuggingChat",
+    name: "HuggingChat", //No
     url: "https://huggingface.co/chat/",
     icon: "/assets/images/ai/hug.svg",
   },
   {
-    name: "Anthropic Claude",
+    name: "Anthropic Claude", //Not really
     url: "https://claude.ai/new",
     icon: "/assets/images/ai/claude.svg",
   },
   {
-    name: "Mistral AI",
+    name: "Mistral AI", //Yes
     url: "https://chat.mistral.ai/chat",
     icon: "/assets/images/ai/mistral.svg",
   },
   {
-    name: "DeepSeek",
+    name: "DeepSeek", //No
     url: "https://chat.deepseek.com",
     icon: "/assets/images/ai/deepseek.svg",
   },
   {
-    name: "Perplexity AI",
+    name: "Perplexity AI", //No
     url: "https://www.perplexity.ai/",
     icon: "/assets/images/ai/perplexity.svg",
   },
@@ -82,7 +82,52 @@ const SEARCH_ENGINES = [
     url: "https://www.amazon.com/s?k=",
     image: "/assets/images/search/amazon.svg",
   },
+  {
+    name: "Grok",
+    url: "https://grok.com/?q=",
+    image: "/assets/images/ai/grok.svg",
+    isAI: true,
+  },
+  {
+    name: "Copilot",
+    url: "https://copilot.microsoft.com/?q=",
+    image: "/assets/images/ai/copilot.svg",
+    isAI: true,
+  },
+  {
+    name: "ChatGPT",
+    url: "https://chatgpt.com/?q=",
+    image: "/assets/images/ai/chatgpt.svg",
+    isAI: true,
+  },
+  {
+    name: "Mistral",
+    url: "https://chat.mistral.ai/chat?q=",
+    image: "/assets/images/ai/mistral.svg",
+    isAI: true,
+  },
+  {
+    name: "Claude", //Not really
+    url: "https://claude.ai/new?q=",
+    image: "/assets/images/ai/claude.svg",
+    isAI: true,
+  },
+  {
+    name: "Meta", //Not really
+    url: "https://www.meta.ai/?q=",
+    image: "/assets/images/ai/meta.svg",
+    isAI: true,
+  },
 ];
+
+const SEARCH_PARAMS = {
+  defaultParam: "q",
+  special: {
+    Yahoo: "p",
+    Wikipedia: "search",
+    Amazon: "k",
+  },
+};
 
 let settingDef = false;
 // Local storage functions
@@ -95,11 +140,15 @@ function savePinnedItems(pinnedItems) {
 }
 
 function getSelectedSearchEngine() {
-  return localStorage.getItem("selectedSearchEngine") || "Google";
+  let obj = localStorage.getItem("selectedSearchEngine");
+  if (obj) {
+    return JSON.parse(obj);
+  }
+  return SEARCH_ENGINES[0];
 }
 
-function saveSelectedSearchEngine(engineName) {
-  localStorage.setItem("selectedSearchEngine", engineName);
+function saveSelectedSearchEngine(engine) {
+  localStorage.setItem("selectedSearchEngine", JSON.stringify(engine));
 }
 
 function isValidUrl(string) {
@@ -178,27 +227,12 @@ async function preloadIcons() {
 
 // Render the main list (AI or tabs), only showing unpinned items
 function renderSidebar(element, list) {
-  const aiList = element; // Could be AI list or tab list container
-  aiList.innerHTML = ""; // Clear the list
-
-  const pinnedItems = getPinnedItems();
-  const fragment = document.createDocumentFragment(); // Use a fragment for better performance
-
-  // Render only unpinned items
-  list.forEach((item) => {
-    const isPinned = pinnedItems.some((pinned) => pinned.url === item.url);
-    if (!isPinned) {
-      const listItem = createListItem(item, false);
-      fragment.appendChild(listItem);
-    }
-  });
-
-  aiList.appendChild(fragment); // Append the fragment to the container
+  renderList(element, list);
 }
 
 // New function to render quick-access independently
 function renderQuickAccess() {
-  const quickAccessList = document.getElementById("quick-access");
+  const quickAccessList = DOM.quickAccess();
   quickAccessList.innerHTML = ""; // Clear the quick-access list
   const pinnedItems = getPinnedItems();
   if (pinnedItems.length == 0) {
@@ -317,7 +351,7 @@ function createListItem(item, isPinned) {
       }
 
       savePinnedItems(pinnedItems);
-      renderSidebar(document.getElementById("ai-elements"), AI_LIST);
+      renderSidebar(DOM.sections.ai(), AI_LIST);
       updateTabList();
       renderQuickAccess();
       renderMostVisited();
@@ -338,7 +372,8 @@ function renderSearchEngineNavbar() {
   const textNode = document.createTextNode("Search with: ");
   fragment.appendChild(textNode);
 
-  const selectedEngine = getSelectedSearchEngine();
+  const selectedEngine = getSelectedSearchEngine().name;
+  console.log(selectedEngine);
 
   // Build all buttons within the fragment
   SEARCH_ENGINES.forEach((engine) => {
@@ -355,8 +390,8 @@ function renderSearchEngineNavbar() {
       "click",
       debounce((e) => {
         e.preventDefault();
-        saveSelectedSearchEngine(engine.name);
-        document.getElementById("search").focus();
+        saveSelectedSearchEngine(engine);
+        DOM.search().focus();
         search();
       }, 100)
     );
@@ -371,69 +406,33 @@ function renderSearchEngineNavbar() {
 function parseSearchEngineQuery(url) {
   try {
     const urlObj = new URL(url);
-    for (const engine of SEARCH_ENGINES) {
-      // Check if the URL starts with the engine's base URL up to the parameter
-      const baseUrlWithoutParams = engine.url.split("?")[0];
-      if (urlObj.origin + urlObj.pathname === baseUrlWithoutParams) {
-        const params = new URLSearchParams(urlObj.search);
-        let queryParam;
-        switch (engine.name) {
-          case "Google":
-          case "DuckDuckGo":
-          case "Bing":
-            queryParam = params.get("q");
-            break;
-          case "Yahoo":
-            queryParam = params.get("p");
-            break;
-          case "Wikipedia":
-            queryParam = params.get("search");
-            break;
-          case "Amazon":
-            queryParam = params.get("k");
-            break;
-          default:
-            queryParam = null;
-        }
-        if (queryParam) {
-          const decodedQuery = decodeURIComponent(queryParam);
-          const selectedEngineName = getSelectedSearchEngine();
-          const selectedEngine =
-            SEARCH_ENGINES.find((e) => e.name === selectedEngineName) ||
-            SEARCH_ENGINES[0];
+    const engine = SEARCH_ENGINES.find(
+      (engine) => urlObj.origin + urlObj.pathname === engine.url.split("?")[0]
+    );
 
-          // Append only the encoded query value to the pre-parameterized URL
-          const newUrl = `${selectedEngine.url}${encodeURIComponent(
-            decodedQuery
-          )}`;
+    if (engine) {
+      const params = new URLSearchParams(urlObj.search);
+      const queryParam = params.get(
+        SEARCH_PARAMS.special[engine.name] || SEARCH_PARAMS.defaultParam
+      );
 
-          // Optional: Preserve additional parameters from the original URL
-          // Uncomment the following block if you want to keep params like "client"
-          /*
-          const newParams = new URLSearchParams();
-          params.forEach((value, key) => {
-            if (key !== "q" && key !== "p" && key !== "search" && key !== "k") {
-              newParams.set(key, value);
-            }
-          });
-          const extraParams = newParams.toString();
-          const newUrlWithExtras = extraParams
-            ? `${newUrl}&${extraParams}`
-            : newUrl;
-          */
+      if (queryParam) {
+        const decodedQuery = decodeURIComponent(queryParam);
+        const selectedEngine =
+          SEARCH_ENGINES.find(
+            (e) => e.name === getSelectedSearchEngine().name
+          ) || SEARCH_ENGINES[0];
 
-          return {
-            engine: engine.name, // Original engine for display
-            query: decodedQuery,
-            newUrl: newUrl, // New URL with current engine
-            // newUrl: newUrlWithExtras, // Uncomment if preserving extra params
-          };
-        }
+        return {
+          engine: engine.name,
+          query: decodedQuery,
+          newUrl: `${selectedEngine.url}${encodeURIComponent(decodedQuery)}`,
+        };
       }
     }
-    return null; // Not a recognized search engine URL
+    return null;
   } catch (e) {
-    return null; // Invalid URL
+    return null;
   }
 }
 
@@ -537,9 +536,9 @@ function getSearchEngineQueries(results, query) {
 }
 
 function search() {
-  const query = document.getElementById("search").value.trim();
-  const resultsContainer = document.querySelector(".search-results");
-  const list = document.getElementById("search-results");
+  const query = DOM.search().value.trim();
+  const resultsContainer = DOM.container();
+  const list = DOM.results();
   list.innerHTML = ""; // Clear the list initially
 
   if (query.length === 0) {
@@ -556,7 +555,9 @@ function search() {
         // Create a fake entry with a search engine query
         const fakeEntry = {
           url: `${
-            SEARCH_ENGINES.find((e) => e.name === getSelectedSearchEngine()).url
+            SEARCH_ENGINES.find(
+              (e) => e.name === getSelectedSearchEngine().name
+            ).url
           }${encodeURIComponent(query)}`,
           title: query,
           lastVisitTime: Date.now(),
@@ -892,8 +893,8 @@ function calculateRelevance(query, historyItem) {
 }
 
 function handleSearchNavigation(event) {
-  const searchInput = document.getElementById("search");
-  const list = document.getElementById("search-results");
+  const searchInput = DOM.search();
+  const list = DOM.results();
   const results = list.getElementsByClassName("search-item");
   const resultsArray = Array.from(results);
 
@@ -955,7 +956,7 @@ function handleSearchNavigation(event) {
 let historyItems = [];
 
 function renderMostVisited() {
-  const mostVisitedList = document.getElementById("most-visited-elements");
+  const mostVisitedList = DOM.sections.mostVisited();
   mostVisitedList.innerHTML = ""; // Clear the list
 
   if (typeof browser !== "undefined" && browser.history) {
@@ -988,7 +989,7 @@ function renderMostVisited() {
 
 // Helper function to render from cached historyItems
 function renderMostVisitedFromCache() {
-  const mostVisitedList = document.getElementById("most-visited-elements");
+  const mostVisitedList = DOM.sections.mostVisited();
   mostVisitedList.innerHTML = ""; // Clear the list again for safety
 
   // Aggregate visit counts by domain
@@ -1026,13 +1027,9 @@ function renderMostVisitedFromCache() {
 }
 
 // Event listeners
-document.addEventListener("keydown", handleSearchNavigation);
-document
-  .getElementById("search")
-  .addEventListener("keyup", debounce(search, 300));
 document.addEventListener("click", (e) => {
   const searchContainer = document.querySelector(".search-container");
-  const resultsContainer = document.querySelector(".search-results");
+  const resultsContainer = DOM.container();
   if (
     !searchContainer.contains(e.target) &&
     !resultsContainer.contains(e.target)
@@ -1097,10 +1094,23 @@ if (window_url) {
   window.location.href = window_url;
 }
 document.addEventListener("DOMContentLoaded", async () => {
+  DOM = {
+    search: () => document.getElementById("search"),
+    results: () => document.getElementById("search-results"),
+    container: () => document.querySelector(".search-results"),
+    quickAccess: () => document.getElementById("quick-access"),
+    sections: {
+      ai: () => document.getElementById("ai-elements"),
+      tabs: () => document.getElementById("tab-elements"),
+      mostVisited: () => document.getElementById("most-visited-elements"),
+    },
+  };
+  document.addEventListener("keydown", handleSearchNavigation);
+  DOM.search().addEventListener("keyup", debounce(search, 300));
   await preloadIcons(); // Add this line at the start
-  tabElement = document.getElementById("tab-elements");
+  tabElement = DOM.sections.tabs();
   updateTabList(); // Renders tabs initially
-  renderSidebar(document.getElementById("ai-elements"), AI_LIST); // Renders AI tools initially
+  renderSidebar(DOM.sections.ai(), AI_LIST); // Renders AI tools initially
   renderQuickAccess(); // Renders quick access initially
   renderMostVisited(); // Renders most visited initially
 
@@ -1231,8 +1241,8 @@ function toggleSection(sectionId) {
 
 document.addEventListener("keydown", (event) => {
   if (event.ctrlKey && event.key === "a") {
-    const searchInput = document.getElementById("search");
-    const resultsContainer = document.querySelector(".search-results");
+    const searchInput = DOM.search();
+    const resultsContainer = DOM.container();
     const activeElement = document.activeElement;
 
     // Check if the active element is within the search results
@@ -1243,3 +1253,53 @@ document.addEventListener("keydown", (event) => {
     }
   }
 });
+
+let DOM;
+
+const ImageCache = {
+  async preload(urls) {
+    return Promise.all(urls.map((url) => this.get(url) || this.fetch(url)));
+  },
+
+  get(url) {
+    return localStorage.getItem(`imageCache_${url}`);
+  },
+
+  set(url, data) {
+    try {
+      localStorage.setItem(`imageCache_${url}`, data);
+    } catch (e) {
+      console.warn("Cache storage failed:", e);
+    }
+  },
+
+  async fetch(url) {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error();
+      const blob = await response.blob();
+      const base64 = await this.blobToBase64(blob);
+      this.set(url, base64);
+      return base64;
+    } catch {
+      return "/assets/images/webpage.svg";
+    }
+  },
+};
+
+function renderList(container, items, options = {}) {
+  const fragment = document.createDocumentFragment();
+  const pinnedItems = getPinnedItems();
+
+  items
+    .filter(
+      (item) => options.showAll || !pinnedItems.some((p) => p.url === item.url)
+    )
+    .forEach((item) => {
+      const isPinned = pinnedItems.some((p) => p.url === item.url);
+      fragment.appendChild(createListItem(item, isPinned));
+    });
+
+  container.innerHTML = "";
+  container.appendChild(fragment);
+}
