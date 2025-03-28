@@ -207,8 +207,8 @@ async function updateSearchEngine() {
       types.forEach((type) => {
         browser.contextMenus.create(
           {
-            id: type.split(" ")[0],
-            title: type,
+            id: type,
+            title: type.split(" ")[0],
             parentId: "search",
             contexts: ["selection", "link", "page"],
           },
