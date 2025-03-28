@@ -1108,15 +1108,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("quick-url").value = "";
     document.getElementById("quick-icon").value = "";
   });
-  browser.runtime.onMessage.addListener((message) => {
-    if (message.action === "resetSidebar") {
-      if (window.location.href !== sidebarUrl) {
-        window.location.href = sidebarUrl; // Reload sidebar.html
-      }
-    } else if (message.action === "openUrl" && message.url) {
-      window.location.href = message.url; // Navigate to the external URL
-    }
-  });
 });
 
 const popupAction = () => {
