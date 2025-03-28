@@ -253,6 +253,9 @@ function renderQuickAccess() {
 function createListItem(item, isPinned) {
   const fragment = document.createDocumentFragment();
   const listItem = document.createElement("li");
+  if (/^(about|file):/i.test(item.url)) {
+    return fragment;
+  }
   listItem.className = "ai-item";
   listItem.id = `ai-item-${encodeURIComponent(item.url)}`;
 
@@ -298,70 +301,67 @@ function createListItem(item, isPinned) {
   link.appendChild(name);
   listItem.appendChild(link);
 
-  if (!item.url.startsWith("about:")) {
-    const pin = document.createElement("button");
-    pin.className = "pin";
-    pin.title = isPinned ? "Unpin" : "Pin";
+  const pin = document.createElement("button");
+  pin.className = "pin";
+  pin.title = isPinned ? "Unpin" : "Pin";
 
-    const pinIcon = document.createElement("img");
-    pinIcon.src = "/assets/images/pin.svg";
-    pinIcon.alt = "Pin icon";
-    pinIcon.className = `pin-icon ${isPinned ? "pinned" : ""}`;
+  const pinIcon = document.createElement("img");
+  pinIcon.src = "/assets/images/pin.svg";
+  pinIcon.alt = "Pin icon";
+  pinIcon.className = `pin-icon ${isPinned ? "pinned" : ""}`;
 
-    pin.appendChild(pinIcon);
-    listItem.appendChild(pin);
-    listItem.addEventListener("click", (e) => {
-      if (settingDef) {
-        e.preventDefault();
-        const pop = document.getElementById("set-url-popup");
-        pop.innerHTML = "";
-        const p = document.createElement("p");
-        if (item.url == window_url) {
-          // unset
-          localStorage.removeItem("defaultURL");
-          p.innerText = "Default page removed.";
-        } else {
-          // set
-          localStorage.setItem("defaultURL", item.url);
-          p.innerText = `${item.name} is now the default page. You can right click and choose to undo.`;
-        }
-        settingDef = !settingDef;
-        pop.appendChild(p);
-        pop.classList.add("active");
-        console.log(pop);
-        setTimeout(() => {
-          pop.classList.remove("active");
-        }, 3000); // Show the popup for 3 seconds
-      }
-    });
-    pin.addEventListener("click", (e) => {
+  listItem.addEventListener("click", (e) => {
+    if (settingDef) {
       e.preventDefault();
-      const pinnedItems = getPinnedItems();
-      const itemIndex = pinnedItems.findIndex((i) => i.url === item.url);
-
-      if (isPinned && itemIndex !== -1) {
-        // Unpin: Remove from pinnedItems
-        pinnedItems.splice(itemIndex, 1);
-        pinIcon.classList.remove("pinned");
-        pin.title = "Pin";
-      } else if (!isPinned && itemIndex === -1) {
-        // Pin: Add only if not already pinned
-        pinnedItems.push({ name: item.name, url: item.url, icon: item.icon });
-        pinIcon.classList.add("pinned");
-        pin.title = "Unpin";
+      const pop = document.getElementById("set-url-popup");
+      pop.innerHTML = "";
+      const p = document.createElement("p");
+      if (item.url == window_url) {
+        // unset
+        localStorage.removeItem("defaultURL");
+        p.innerText = "Default page removed.";
       } else {
-        // Item is already pinned but marked unpinned in UI (edge case), do nothing
-        return;
+        // set
+        localStorage.setItem("defaultURL", item.url);
+        p.innerText = `${item.name} is now the default page. Right click and choose Reset the Sidebar to undo.`;
       }
+      settingDef = !settingDef;
+      pop.appendChild(p);
+      pop.classList.add("active");
 
-      savePinnedItems(pinnedItems);
-      renderSidebar(DOM.sections.ai(), AI_LIST);
-      updateTabList();
-      renderQuickAccess();
-      renderMostVisited();
-    });
-  }
+      setTimeout(() => {
+        pop.classList.remove("active");
+      }, 3000); // Show the popup for 3 seconds
+    }
+  });
+  pin.addEventListener("click", (e) => {
+    e.preventDefault();
+    const pinnedItems = getPinnedItems();
+    const itemIndex = pinnedItems.findIndex((i) => i.url === item.url);
 
+    if (isPinned && itemIndex !== -1) {
+      // Unpin: Remove from pinnedItems
+      pinnedItems.splice(itemIndex, 1);
+      pinIcon.classList.remove("pinned");
+      pin.title = "Pin";
+    } else if (!isPinned && itemIndex === -1) {
+      // Pin: Add only if not already pinned
+      pinnedItems.push({ name: item.name, url: item.url, icon: item.icon });
+      pinIcon.classList.add("pinned");
+      pin.title = "Unpin";
+    } else {
+      // Item is already pinned but marked unpinned in UI (edge case), do nothing
+      return;
+    }
+
+    savePinnedItems(pinnedItems);
+    renderSidebar(DOM.sections.ai(), AI_LIST);
+    updateTabList();
+    renderQuickAccess();
+    renderMostVisited();
+  });
+  pin.appendChild(pinIcon);
+  listItem.appendChild(pin);
   fragment.appendChild(listItem);
   return fragment;
 }
@@ -377,7 +377,6 @@ function renderSearchEngineNavbar() {
   fragment.appendChild(textNode);
 
   const selectedEngine = getSelectedSearchEngine().name;
-  console.log(selectedEngine);
 
   // Build all buttons within the fragment
   SEARCH_ENGINES.forEach((engine) => {
@@ -1211,11 +1210,13 @@ const popupAction = () => {
   const iconInput = document.getElementById("quick-icon").value.trim();
   const popup = document.getElementById("add-quick-popup");
   // Normalize URL: Add https:// if no protocol is specified, ignore about: URLs
-  if (url && !url.match(/^(http|https|about):/i)) {
+  if (url && !url.match(/^(http|https|about|file):/i)) {
     url = `https://${url}`;
   }
-  if (!url || url.startsWith("about:")) {
-    alert("Please enter a valid URL (about: URLs are not allowed).");
+  if (!url || /^(about|file):/i.test(url)) {
+    alert(
+      "Please enter a valid URL (local files and about: URLs are not allowed)."
+    );
     return;
   }
 
