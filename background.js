@@ -192,25 +192,13 @@ async function updateSearchEngine() {
       () => void browser.runtime.lastError
     );
     if (search.isAI != null) {
-      const types = [
-        "Fix what is wrong with the following: ",
-        "Summarize briefly and concisely, with bullet points on key terms: ", // Existing: Condense the selected text
-        "Explain throughly and include easy to understand examples: ", // Existing: Clarify the selected text
-        "Research and compare, give the best explanation or idea for this topic: ", // Existing: Dig deeper into the topic
-        "Translate the following text: ", // New: Convert text to another language
-        "Analyze the following", // New: Break down components or sentiment
-        "Generate related content given: ", // New: Create related content
-        "Fact-Check this claim. Explain supporting or opposing arguments: ", // New: Verify accuracy of information
-        "Define the term:", // New: Provide definitions for terms
-        "Code or fix the solution for the following. Explain each step with comments: ", // New: Interpret or generate code snippets
-      ];
       types.forEach((type) => {
         browser.contextMenus.create(
           {
-            id: type,
-            title: type.split(" ")[0],
+            id: type.prompt,
+            title: type.id,
             parentId: "search",
-            contexts: ["selection", "link", "page"],
+            contexts: type.context,
           },
           () => void browser.runtime.lastError
         );
@@ -220,10 +208,122 @@ async function updateSearchEngine() {
 }
 // Initial menu setup
 let defaultURL;
+let types;
 updateQuickAccessMenu();
 updateSearchEngine();
 updateURL();
-
+getPrompts();
+function getPrompts() {
+  types = JSON.parse(localStorage.getItem("ai-prompts")) || [
+    {
+      id: "Fix",
+      prompt: "Fix what is wrong with the following: ",
+      context: ["selection"],
+    },
+    {
+      id: "Solve",
+      prompt: "Solve the following problem and give step-by-step logic: ",
+      context: ["selection"],
+    },
+    {
+      id: "Summarize",
+      prompt:
+        "Summarize briefly and concisely, with bullet points on key terms: ",
+      context: ["selection", "page"],
+    },
+    {
+      id: "Explain",
+      prompt: "Explain thoroughly and include easy-to-understand examples: ",
+      context: ["selection"],
+    },
+    {
+      id: "Research",
+      prompt:
+        "Research and compare, give the best explanation or idea for this topic: ",
+      context: ["selection", "link", "page"],
+    },
+    {
+      id: "Paraphrase",
+      prompt: "Paraphrase the following text: ",
+      context: ["selection"],
+    },
+    {
+      id: "Fill and Complete",
+      prompt: "Fill in the blank and complete the following text: ",
+      context: ["selection"],
+    },
+    {
+      id: "Translate",
+      prompt: "Translate the following text. What does it mean? : ",
+      context: ["selection"],
+    },
+    {
+      id: "Analyze",
+      prompt: "Analyze the following: ",
+      context: ["selection", "page"],
+    },
+    {
+      id: "Generate",
+      prompt: "Generate related content given: ",
+      context: ["selection"],
+    },
+    {
+      id: "Fact Check",
+      prompt:
+        "Fact-check this claim. Explain supporting or opposing arguments: ",
+      context: ["selection", "link"],
+    },
+    {
+      id: "Define",
+      prompt: "Define the term: ",
+      context: ["selection"],
+    },
+    {
+      id: "Code",
+      prompt:
+        "Code and/or solve the solution for the following. Explain each step with comments: ",
+      context: ["selection"],
+    },
+    {
+      id: "Evaluate",
+      prompt: "Evaluate the strengths and weaknesses of: ",
+      context: ["selection", "page"],
+    },
+    {
+      id: "Predict",
+      prompt: "Predict the outcome of the following scenario: ",
+      context: ["selection"],
+    },
+    {
+      id: "Create a Plan",
+      prompt: "Create a step-by-step plan to achieve: ",
+      context: ["selection"],
+    },
+    {
+      id: "Identify Themes",
+      prompt: "Identify the main themes or ideas in: ",
+      context: ["selection", "page"],
+    },
+    {
+      id: "Compare/Contrast",
+      prompt: "Compare and contrast the following: ",
+      context: ["selection"],
+    },
+    {
+      id: "Find Context",
+      prompt: "Provide historical context for: ",
+      context: ["selection", "page"],
+    },
+    {
+      id: "Suggest improvements",
+      prompt: "Suggest improvements for the following: ",
+      context: ["selection", "page"],
+    },
+  ];
+  if (!localStorage.getItem("ai-prompts")) {
+    localStorage.setItem("ai-prompts", JSON.stringify(types));
+  }
+}
 // Listen for changes in localStorage and update menus accordingly
 window.addEventListener("storage", (event) => {
   if (event.key === "pinnedItems") {
@@ -232,6 +332,8 @@ window.addEventListener("storage", (event) => {
     updateSearchEngine();
   } else if (event.key === "defaultURL") {
     updateURL();
+  } else if (event.key === "ai-prompts") {
+    getPrompts();
   }
 });
 
