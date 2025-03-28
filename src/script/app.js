@@ -56,78 +56,82 @@ const SEARCH_ENGINES = [
     name: "Google",
     url: "https://www.google.com/search?q=",
     image: "/assets/images/search/google.svg",
+    queryParam: "q",
   },
   {
     name: "DuckDuckGo",
     url: "https://duckduckgo.com/?q=",
     image: "/assets/images/search/duckduckgo.svg",
+    queryParam: "q",
   },
   {
     name: "Bing",
     url: "https://www.bing.com/search?q=",
     image: "/assets/images/search/bing.svg",
+    queryParam: "q",
   },
   {
     name: "Yahoo",
     url: "https://search.yahoo.com/search?p=",
     image: "/assets/images/search/yahoo.svg",
+    queryParam: "p",
   },
   {
     name: "Wikipedia",
     url: "https://en.wikipedia.org/w/index.php?search=",
     image: "/assets/images/search/wikipedia.svg",
+    queryParam: "search",
   },
   {
     name: "Amazon",
     url: "https://www.amazon.com/s?k=",
     image: "/assets/images/search/amazon.svg",
+    queryParam: "k",
   },
+  // AI search engines
   {
     name: "Grok",
     url: "https://grok.com/?q=",
     image: "/assets/images/ai/grok.svg",
+    queryParam: "q",
     isAI: true,
   },
   {
     name: "Copilot",
     url: "https://copilot.microsoft.com/?q=",
     image: "/assets/images/ai/copilot.svg",
+    queryParam: "q",
     isAI: true,
   },
   {
     name: "ChatGPT",
     url: "https://chatgpt.com/?q=",
     image: "/assets/images/ai/chatgpt.svg",
+    queryParam: "q",
     isAI: true,
   },
   {
     name: "Mistral",
     url: "https://chat.mistral.ai/chat?q=",
     image: "/assets/images/ai/mistral.svg",
+    queryParam: "q",
     isAI: true,
   },
   {
     name: "Claude", //Not really
     url: "https://claude.ai/new?q=",
     image: "/assets/images/ai/claude.svg",
+    queryParam: "q",
     isAI: true,
   },
   {
     name: "Meta", //Not really
     url: "https://www.meta.ai/?q=",
     image: "/assets/images/ai/meta.svg",
+    queryParam: "q",
     isAI: true,
   },
 ];
-
-const SEARCH_PARAMS = {
-  defaultParam: "q",
-  special: {
-    Yahoo: "p",
-    Wikipedia: "search",
-    Amazon: "k",
-  },
-};
 
 let settingDef = false;
 // Local storage functions
@@ -412,9 +416,7 @@ function parseSearchEngineQuery(url) {
 
     if (engine) {
       const params = new URLSearchParams(urlObj.search);
-      const queryParam = params.get(
-        SEARCH_PARAMS.special[engine.name] || SEARCH_PARAMS.defaultParam
-      );
+      const queryParam = params.get(engine.queryParam);
 
       if (queryParam) {
         const decodedQuery = decodeURIComponent(queryParam);
@@ -542,7 +544,40 @@ function search() {
   list.innerHTML = ""; // Clear the list initially
 
   if (query.length === 0) {
-    resultsContainer.classList.remove("active");
+    // If we have an AI search engine, we can fill in some prompts
+    const types = JSON.parse(localStorage.getItem("ai-prompts"));
+    if (types.length > 0 && getSelectedSearchEngine().isAI) {
+      const fragment = document.createDocumentFragment();
+      types.forEach((type) => {
+        const li = document.createElement("p");
+        li.className = "search-item";
+        const a = document.createElement("a");
+        a.target = "_self";
+        a.rel = "noopener noreferrer";
+        a.className = "search-link";
+        a.tabIndex = 0;
+        a.textContent = type.prompt; // Display the prompt text
+        a.href = `#${encodeURIComponent(type.prompt)}`; // Simple anchor link, could be customized
+        a.dataset.promptId = type.id; // Store the ID for potential use
+        li.appendChild(a);
+        // We want to fill the input but not click the link
+        a.addEventListener("click", (e) => {
+          e.preventDefault();
+          DOM.search().value = a.textContent; // the input
+          DOM.search().focus();
+          search(); // search again
+        });
+        fragment.appendChild(li);
+      });
+      list.appendChild(fragment);
+      resultsContainer.classList.add("active"); // Show the container with suggestions
+      renderSearchEngineNavbar();
+    } else {
+      resultsContainer.classList.add("active"); // Show the container with suggestions
+      renderSearchEngineNavbar();
+      // resultsContainer.classList.remove("active"); // Hide if no prompts available
+    }
+
     return;
   }
 
@@ -1107,6 +1142,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   };
   document.addEventListener("keydown", handleSearchNavigation);
   DOM.search().addEventListener("keyup", debounce(search, 300));
+  DOM.search().addEventListener("focus", debounce(search, 300));
   await preloadIcons(); // Add this line at the start
   tabElement = DOM.sections.tabs();
   updateTabList(); // Renders tabs initially
@@ -1302,4 +1338,25 @@ function renderList(container, items, options = {}) {
 
   container.innerHTML = "";
   container.appendChild(fragment);
+}
+
+function setupEventListeners() {
+  const debounceTime = 300;
+
+  document.addEventListener("keydown", handleSearchNavigation);
+  DOM.search().addEventListener("keyup", debounce(search, debounceTime));
+
+  // Use event delegation for document clicks
+  document.addEventListener("click", (e) => {
+    const searchContainer = DOM.container();
+    if (!searchContainer?.contains(e.target)) {
+      searchContainer?.classList.remove("active");
+    }
+  });
+
+  // Tab management
+  const tabEvents = ["onCreated", "onUpdated", "onRemoved"];
+  tabEvents.forEach((event) => {
+    browser.tabs[event].addListener(debounce(updateTabList, 1000));
+  });
 }
