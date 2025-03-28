@@ -84,6 +84,7 @@ const SEARCH_ENGINES = [
   },
 ];
 
+let settingDef = false;
 // Local storage functions
 function getPinnedItems() {
   return JSON.parse(localStorage.getItem("pinnedItems")) || [];
@@ -271,7 +272,30 @@ function createListItem(item, isPinned) {
 
     pin.appendChild(pinIcon);
     listItem.appendChild(pin);
-
+    listItem.addEventListener("click", (e) => {
+      if (settingDef) {
+        e.preventDefault();
+        const pop = document.getElementById("set-url-popup");
+        pop.innerHTML = "";
+        const p = document.createElement("p");
+        if (item.url == window_url) {
+          // unset
+          localStorage.removeItem("defaultURL");
+          p.innerText = "Default page removed.";
+        } else {
+          // set
+          localStorage.setItem("defaultURL", item.url);
+          p.innerText = `${item.name} is now the default page. You can right click and choose to undo.`;
+        }
+        settingDef = !settingDef;
+        pop.appendChild(p);
+        pop.classList.add("active");
+        console.log(pop);
+        setTimeout(() => {
+          pop.classList.remove("active");
+        }, 3000); // Show the popup for 3 seconds
+      }
+    });
     pin.addEventListener("click", (e) => {
       e.preventDefault();
       const pinnedItems = getPinnedItems();
@@ -1068,6 +1092,10 @@ function debounce(func, wait) {
   };
 }
 // Initial load and navbar setup
+window_url = localStorage.getItem("defaultURL");
+if (window_url) {
+  window.location.href = window_url;
+}
 document.addEventListener("DOMContentLoaded", async () => {
   await preloadIcons(); // Add this line at the start
   tabElement = document.getElementById("tab-elements");
@@ -1108,6 +1136,27 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("quick-url").value = "";
     document.getElementById("quick-icon").value = "";
   });
+  const defBtn = document.getElementById("set-url");
+  defBtn.addEventListener(
+    "click",
+    debounce(() => {
+      settingDef = !settingDef;
+      localStorage.removeItem("defaultURL");
+      const pop = document.getElementById("set-url-popup");
+      pop.innerHTML = "";
+      const p = document.createElement("p");
+      if (settingDef) {
+        p.innerText = `Click on a shortcut to set as default page`;
+      } else {
+        p.innerText = `User action complete`;
+      }
+      pop.appendChild(p);
+      pop.classList.add("active");
+      setTimeout(() => {
+        pop.classList.remove("active");
+      }, 3000); // Show the popup for 3 seconds
+    }, 250)
+  );
 });
 
 const popupAction = () => {
