@@ -547,48 +547,122 @@ function getSearchEngineQueries(results, query) {
   });
   return searchEngineEntries;
 }
+// Utility to create a search link element
+function createSearchLink({
+  href,
+  text,
+  className = "search-link",
+  target = "_self",
+  rel = "noopener noreferrer",
+  tabIndex = 0,
+} = {}) {
+  const a = document.createElement("a");
+  a.target = target;
+  a.rel = rel;
+  a.className = className;
+  a.tabIndex = tabIndex;
+  a.href = href;
+  a.textContent = text || "";
+  return a;
+}
 
+// Utility to highlight text with regex matches
+function highlightText(container, text, regex) {
+  container.textContent = ""; // Clear existing content
+  const parts = text.split(regex);
+  parts.forEach((part, index) => {
+    if (index % 2 === 1) {
+      // Matches from regex
+      const bold = document.createElement("strong");
+      bold.textContent = part;
+      container.appendChild(bold);
+    } else if (part) {
+      // Non-matched text
+      container.appendChild(document.createTextNode(part));
+    }
+  });
+}
+
+// Utility to create a search link element
+function createSearchLink({
+  href,
+  text,
+  className = "search-link",
+  target = "_self",
+  rel = "noopener noreferrer",
+  tabIndex = 0,
+} = {}) {
+  const a = document.createElement("a");
+  a.target = target;
+  a.rel = rel;
+  a.className = className;
+  a.tabIndex = tabIndex;
+  a.href = href;
+  a.textContent = text || "";
+  return a;
+}
+
+// Utility to highlight text with regex matches
+function highlightText(container, text, regex) {
+  container.textContent = ""; // Clear existing content
+  const parts = text.split(regex);
+  parts.forEach((part, index) => {
+    if (index % 2 === 1) {
+      // Matches from regex
+      const bold = document.createElement("strong");
+      bold.textContent = part;
+      container.appendChild(bold);
+    } else if (part) {
+      // Non-matched text
+      container.appendChild(document.createTextNode(part));
+    }
+  });
+}
+
+// Refactored search function
 function search() {
   const query = DOM.search().value.trim();
   const resultsContainer = DOM.container();
   const list = DOM.results();
   list.innerHTML = ""; // Clear the list initially
 
+  const fragment = document.createDocumentFragment();
+
   if (query.length === 0) {
-    // If we have an AI search engine, we can fill in some prompts
-    const types = JSON.parse(localStorage.getItem("ai-prompts"));
+    const types = JSON.parse(localStorage.getItem("ai-prompts")) || [];
     if (types.length > 0 && getSelectedSearchEngine().isAI) {
-      const fragment = document.createDocumentFragment();
       types.forEach((type) => {
         const li = document.createElement("p");
         li.className = "search-item";
-        const a = document.createElement("a");
-        a.target = "_self";
-        a.rel = "noopener noreferrer";
-        a.className = "search-link";
-        a.tabIndex = 0;
-        a.textContent = type.prompt; // Display the prompt text
-        a.href = `#${encodeURIComponent(type.prompt)}`; // Simple anchor link, could be customized
-        a.dataset.promptId = type.id; // Store the ID for potential use
-        li.appendChild(a);
-        // We want to fill the input but not click the link
+        const href = `${getSelectedSearchEngine().url}${encodeURIComponent(
+          type.prompt
+        )}`;
+        const a = createSearchLink({ href, text: type.prompt });
+        a.dataset.promptId = type.id;
+
+        const parsedSearch = parseSearchEngineQuery(href);
+        const queryRegex = new RegExp(`(${query})`, "gi");
+        if (parsedSearch) {
+          a.href = parsedSearch.newUrl;
+          highlightText(a, parsedSearch.query, queryRegex);
+          a.dataset.originalQuery = parsedSearch.query;
+        }
+
         a.addEventListener("click", (e) => {
           e.preventDefault();
-          DOM.search().value = a.textContent; // the input
+          DOM.search().value = type.prompt; // Use original prompt text
           DOM.search().focus();
-          search(); // search again
+          search();
         });
+
+        li.appendChild(a);
         fragment.appendChild(li);
       });
-      list.appendChild(fragment);
-      resultsContainer.classList.add("active"); // Show the container with suggestions
-      renderSearchEngineNavbar();
-    } else {
-      resultsContainer.classList.add("active"); // Show the container with suggestions
-      renderSearchEngineNavbar();
-      // resultsContainer.classList.remove("active"); // Hide if no prompts available
-    }
 
+      list.appendChild(fragment);
+    }
+    resultsContainer.classList.add("active");
+    renderSearchEngineNavbar();
     return;
   }
 
@@ -597,8 +671,6 @@ function search() {
       .search({ text: query })
       .then((results) => {
         const LIMIT = 12;
-
-        // Create a fake entry with a search engine query
         const fakeEntry = {
           url: `${
             SEARCH_ENGINES.find(
@@ -610,25 +682,21 @@ function search() {
           visitCount: 1,
         };
 
-        // Get a consolidated domain entry (if any)
         const consolidatedDomainEntries = consolidateHighlyRelevantDomains(
           results,
           query
         );
-        // Get all search engine queries
         const searchEngineEntries = getSearchEngineQueries(results, query);
-        // Take top LIMIT results
         results = results.slice(0, LIMIT - 5);
-        // Deduplicate results based on N characters after the domain name
+
         const uniqueResults = [];
         const seenUrls = new Set();
-        const N = 30; // Adjust this value as needed
+        const N = 30;
         results.forEach((item) => {
           const urlObj = new URL(item.url);
-          const hostname = urlObj.hostname.toLowerCase();
-          const afterDomain = (urlObj.pathname + urlObj.search).toLowerCase();
-          const normalizedUrl = hostname + afterDomain.slice(0, N); // Domain + N chars after
-
+          const normalizedUrl =
+            urlObj.hostname.toLowerCase() +
+            (urlObj.pathname + urlObj.search).toLowerCase().slice(0, N);
           if (
             !seenUrls.has(normalizedUrl) &&
             !parseSearchEngineQuery(item.url)
@@ -638,100 +706,53 @@ function search() {
           }
         });
         results = uniqueResults;
-        // Append consolidated domain entries up to LIMIT
-        let spaceAvailable = LIMIT - results.length - 3; // Leave space for search engine entries
-        if (consolidatedDomainEntries && consolidatedDomainEntries.length > 0)
+
+        let spaceAvailable = LIMIT - results.length - 3;
+        if (consolidatedDomainEntries?.length > 0) {
           results = results.concat(
             consolidatedDomainEntries.slice(0, spaceAvailable)
           );
+        }
 
         spaceAvailable = LIMIT - results.length;
-        if (searchEngineEntries && searchEngineEntries.length > 0)
+        if (searchEngineEntries?.length > 0) {
           results = results.concat(
             searchEngineEntries.slice(0, spaceAvailable)
           );
+        }
 
         results.push(fakeEntry);
 
-        // Sort all entries by relevance
-        results.sort((a, b) => {
-          const relevanceScoreA = calculateRelevance(query, a);
-          const relevanceScoreB = calculateRelevance(query, b);
-          return relevanceScoreB - relevanceScoreA;
-        });
+        results.sort(
+          (a, b) => calculateRelevance(query, b) - calculateRelevance(query, a)
+        );
 
-        // Build results in a DocumentFragment
-        const fragment = document.createDocumentFragment();
-        const seenHrefs = new Set(); // Track duplicates within the fragment
-
+        const seenHrefs = new Set();
         results.forEach((history) => {
           const li = document.createElement("p");
           li.className = "search-item";
-          const a = document.createElement("a");
-          a.target = "_self";
-          a.rel = "noopener noreferrer";
-          a.className = "search-link";
-          a.tabIndex = 0;
-
+          const a = createSearchLink({ href: history.url });
           const parsedSearch = parseSearchEngineQuery(history.url);
           const queryRegex = new RegExp(`(${query})`, "gi");
+
           if (parsedSearch) {
             a.href = parsedSearch.newUrl;
-
-            // Create a text node with the query and bold the matches
-            a.textContent = ""; // Clear existing content
-
-            // Split the query by regex and process matches
-            const parts = parsedSearch.query.split(queryRegex);
-            parts.forEach((part, index) => {
-              if (index % 2 === 1) {
-                // Matches from regex
-                const bold = document.createElement("strong");
-                bold.textContent = part;
-                a.appendChild(bold);
-              } else if (part) {
-                // Non-matched text
-                a.appendChild(document.createTextNode(part));
-              }
-            });
-
+            highlightText(a, parsedSearch.query, queryRegex);
             a.dataset.originalQuery = parsedSearch.query;
           } else {
-            a.href = history.url;
-
-            // Clean URL and create underlined content
             const cleanedUrl = history.url.replace(/^https?:\/\//i, "");
-            a.textContent = ""; // Clear existing content
             const underline = document.createElement("u");
-
-            // Split the URL by regex and process matches
-            const parts = cleanedUrl.split(queryRegex);
-            parts.forEach((part, index) => {
-              if (index % 2 === 1) {
-                // Matches from regex
-                const bold = document.createElement("strong");
-                bold.textContent = part;
-                underline.appendChild(bold);
-              } else if (part) {
-                // Non-matched text
-                underline.appendChild(document.createTextNode(part));
-              }
-            });
-
+            highlightText(underline, cleanedUrl, queryRegex);
             a.appendChild(underline);
           }
 
-          // Skip if text doesn’t include query
           if (!a.textContent.toLowerCase().includes(query.toLowerCase())) {
             return;
           }
 
-          // Normalize URL for duplicate check
           const normalizedHref = a.href
             .replace(/^https?:\/\//i, "")
             .replace(/\/$/, "");
-
-          // Only add if not a duplicate
           if (!seenHrefs.has(normalizedHref)) {
             seenHrefs.add(normalizedHref);
             li.appendChild(a);
@@ -739,7 +760,6 @@ function search() {
           }
         });
 
-        // Append the complete fragment to the list at once
         list.appendChild(fragment);
         renderSearchEngineNavbar();
         resultsContainer.classList.add("active");
@@ -1361,7 +1381,9 @@ function setupEventListeners() {
   const debounceTime = 300;
 
   document.addEventListener("keydown", handleSearchNavigation);
+
   DOM.search().addEventListener("keyup", debounce(search, debounceTime));
+  DOM.search().addEventListener("click", debounce(search, debounceTime));
 
   // Use event delegation for document clicks
   document.addEventListener("click", (e) => {
