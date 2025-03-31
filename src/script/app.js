@@ -989,12 +989,11 @@ function handleSearchNavigation(event) {
       search(); // Populate results with parseSearchEngineQuery
       setTimeout(() => {
         const link = list.querySelector("a.search-link");
-        if (link) {
-          link.focus(); // Focus but don’t click
-          results[0].classList.add("active"); // Add "active" to the first result
-          searchInput.value =
-            link.dataset.originalQuery || link.href || link.textContent;
-        }
+        link.focus(); // Focus
+        results[0].classList.add("active"); // Add "active" to the first result
+        searchInput.value =
+          link.dataset.originalQuery || link.href || link.textContent;
+        window.location.href = link;
       }, 50);
     }
   }
