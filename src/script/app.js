@@ -743,6 +743,7 @@ function search() {
         list.appendChild(fragment);
         renderSearchEngineNavbar();
         resultsContainer.classList.add("active");
+        handleSearchNavigation(() => {});
       })
       .catch((error) => {
         console.error(error);
@@ -943,7 +944,13 @@ function handleSearchNavigation(event) {
   const list = DOM.results();
   const results = list.getElementsByClassName("search-item");
   const resultsArray = Array.from(results);
-
+  if (
+    !resultsArray.some((result) => result.classList.contains("active")) &&
+    resultsArray.length > 0
+  ) {
+    results[0].classList.add("active");
+  }
+  if (!event) return;
   if (event.key === "Tab" && resultsArray.length > 0) {
     event.preventDefault();
     const activeElement = document.activeElement;
@@ -1150,16 +1157,14 @@ document.addEventListener("DOMContentLoaded", async () => {
       mostVisited: () => document.getElementById("most-visited-elements"),
     },
   };
-  document.addEventListener("keydown", handleSearchNavigation);
-  DOM.search().addEventListener("keyup", debounce(search, 300));
-  DOM.search().addEventListener("focus", debounce(search, 300));
+
   await preloadIcons(); // Add this line at the start
   tabElement = DOM.sections.tabs();
   updateTabList(); // Renders tabs initially
   renderSidebar(DOM.sections.ai(), AI_LIST); // Renders AI tools initially
   renderQuickAccess(); // Renders quick access initially
   renderMostVisited(); // Renders most visited initially
-
+  setupEventListeners();
   // Set up navbar toggling
   const navButtons = document.querySelectorAll(".nav-btn");
   navButtons.forEach((button) => {
