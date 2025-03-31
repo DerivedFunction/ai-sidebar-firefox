@@ -20,6 +20,11 @@ const AI_LIST = [
     icon: "/assets/images/ai/gemini.svg",
   },
   {
+    name: "Google (AI mode)",
+    url: "https://www.google.com/search?udm=50&q=",
+    icon: "/assets/images/ai/google.svg",
+  },
+  {
     name: "Meta AI", //Not really
     url: "https://www.meta.ai/",
     icon: "/assets/images/ai/meta.svg",
@@ -114,6 +119,13 @@ const SEARCH_ENGINES = [
     name: "Mistral",
     url: "https://chat.mistral.ai/chat?q=",
     image: "/assets/images/ai/mistral.svg",
+    queryParam: "q",
+    isAI: true,
+  },
+  {
+    name: "Google (AI mode)",
+    url: "https://www.google.com/search?udm=50&q=",
+    image: "/assets/images/ai/google.svg",
     queryParam: "q",
     isAI: true,
   },
